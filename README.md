@@ -1,17 +1,11 @@
 # SkyBridge - Roadmap & Implementation Plan
 
 ## Project Overview
-SkyBridge is a real-time flight simulator mod that bridges in-game telemetry with external applications via UDP networking. Capture flight data, screenshots.
+SkyBridge is a real-time flight simulator mod for MSFS 2020 that bridges in-game telemetry with external applications via UDP networking. Capture flight data, screenshots.
 
 ---
 
 ## Phase 1: Mod In-Game
-
-### Simulator Support Strategy
-- **MSFS 2020/2024** → C# + SimConnect SDK (primary target)
-- **X-Plane 11/12** → C/C++ + X-Plane SDK
-- **DCS World** → Lua (built-in export scripts)
-- **Kerbal Space Program** → C# (Unity plugin)
 
 ### Telemetry Data to Expose
 - **Altitude**: MSL & AGL
