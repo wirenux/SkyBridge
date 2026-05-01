@@ -1,6 +1,6 @@
 # SkyBridge
 
-A real-time Microsoft Flight Simulator mod that bridges in-game telemetry with external applications via UDP networking. Capture flight data, stream live screenshots, and synchronize multiple clients with zero latency.
+A real-time Microsoft Flight Simulator mod that bridges in-game telemetry with external applications via UDP networking. Capture flight data, screenshots.
 
 ## Features
 
