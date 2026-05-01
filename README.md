@@ -136,3 +136,8 @@ python-socketio
 5. Dashboard frontend
 6. ✅ Portal
 7. Multi-simulator support expansion
+
+---
+
+## License
+This project is release under the [MIT LICENSE](./LICENSE).
