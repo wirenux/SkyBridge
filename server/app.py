@@ -6,6 +6,8 @@ from flask import Flask, jsonify, render_template, request
 app = Flask(
     __name__,
     template_folder="../frontend/",
+    static_folder="../frontend/assets",
+    static_url_path="/assets",
 )
 
 # Disable host header validation for local network access
