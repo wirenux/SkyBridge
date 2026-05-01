@@ -4,7 +4,7 @@
         <meta charset="UTF-8" />
         <meta http-equiv="X-UA-Compatible" content="IE=edge" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>SkyBridge - Portal</title>
+        <title>SkyBridge - Host</title>
         <style>
             * {
                 margin: 0;
@@ -63,6 +63,11 @@
                 box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.05);
             }
 
+            input:disabled {
+                background-color: #f5f5f5;
+                color: #999;
+            }
+
             button {
                 width: 100%;
                 padding: 12px 16px;
@@ -83,6 +88,11 @@
 
             button:active {
                 background-color: #222;
+            }
+
+            button:disabled {
+                background-color: #ccc;
+                cursor: not-allowed;
             }
 
             .result {
@@ -131,12 +141,13 @@
                 text-align: right;
                 flex: 1;
                 margin-left: 12px;
+                font-family: "Monaco", "Courier New", monospace;
+                font-size: 13px;
             }
 
-            .link-button {
+            .copy-btn {
                 display: inline-block;
-                width: 100%;
-                padding: 10px 16px;
+                padding: 6px 12px;
                 margin-top: 12px;
                 background-color: #333;
                 color: white;
@@ -145,11 +156,17 @@
                 text-align: center;
                 font-size: 14px;
                 font-weight: 500;
+                cursor: pointer;
+                border: none;
                 transition: background-color 0.2s ease;
             }
 
-            .link-button:hover {
+            .copy-btn:hover {
                 background-color: #555;
+            }
+
+            .copy-btn.copied {
+                background-color: #28a745;
             }
 
             .error-text {
@@ -190,79 +207,58 @@
     </head>
     <body>
         <div class="container">
-            <h1>🌉 SkyBridge</h1>
+            <h1>🌉 SkyBridge Host</h1>
 
             <div class="nav-links">
-                <a href="/" class="active">Decode</a>
-                <a href="/host">Host</a>
+                <a href="/">Decode</a>
+                <a href="/host" class="active">Host</a>
             </div>
 
             <div class="form-group">
-                <label for="code">Enter 9-character code:</label>
+                <label for="port">Port (default: 5000):</label>
                 <input
-                    type="text"
-                    id="code"
-                    placeholder="e.g., SN17xl9Y0"
-                    maxlength="9"
-                    autocomplete="off"
+                    type="number"
+                    id="port"
+                    placeholder="5000"
+                    value="5000"
+                    min="1"
+                    max="65535"
                 />
             </div>
 
-            <button onclick="decodeCode()">Decode</button>
+            <button onclick="getAndEncode()">Get My Code</button>
 
             <div id="result" class="result">
                 <p>
                     <span class="result-label">Code:</span>
                     <span class="result-value" id="result-code"></span>
                 </p>
-                <p>
-                    <span class="result-label">IP:</span>
-                    <span class="result-value" id="result-ip"></span>
-                </p>
-                <p>
-                    <span class="result-label">Port:</span>
-                    <span class="result-value" id="result-port"></span>
-                </p>
-                <p>
-                    <span class="result-label">Link:</span>
-                    <span class="result-value" id="result-link"></span>
-                </p>
-                <a id="link-btn" class="link-button" target="_blank"
-                    >Open Dashboard</a
-                >
+                <button class="copy-btn" onclick="copyToClipboard(this)">
+                    Copy Code
+                </button>
             </div>
         </div>
 
         <script>
-            const codeInput = document.getElementById("code");
-            const resultDiv = document.getElementById("result");
+            let currentCode = "";
 
-            // Allow Enter key to decode
-            codeInput.addEventListener("keypress", (e) => {
-                if (e.key === "Enter") decodeCode();
-            });
+            async function getAndEncode() {
+                const portInput = document.getElementById("port");
+                const port = parseInt(portInput.value) || 5000;
 
-            async function decodeCode() {
-                const code = codeInput.value.trim();
-
-                if (!code) {
-                    showError("Please enter a code");
-                    return;
-                }
-
-                if (code.length !== 9) {
-                    showError("Code must be exactly 9 characters");
+                if (port < 1 || port > 65535) {
+                    showError("Port must be between 1 and 65535");
                     return;
                 }
 
                 try {
-                    const response = await fetch(`/api/decode/${code}`);
+                    const response = await fetch(`/api/local-ip?port=${port}`);
                     const data = await response.json();
 
                     if (data.success) {
                         showResult(data);
                     } else {
-                        showError(data.error || "Failed to decode code");
+                        showError(data.error || "Failed to get IP");
                     }
                 } catch (error) {
                     showError("Network error: " + error.message);
@@ -271,21 +267,17 @@
 
             function showResult(data) {
                 document.getElementById("result-code").textContent = data.code;
-                document.getElementById("result-ip").textContent = data.ip;
-                document.getElementById("result-port").textContent = data.port;
-                document.getElementById("result-link").textContent = data.link;
+                currentCode = data.code;
 
-                const linkBtn = document.getElementById("link-btn");
-                linkBtn.href = data.link;
-
+                const resultDiv = document.getElementById("result");
                 resultDiv.className = "result show success";
 
-                // Hide error message if any
                 const errorMsg = resultDiv.querySelector(".error-message");
                 if (errorMsg) errorMsg.style.display = "none";
             }
 
             function showError(message) {
+                const resultDiv = document.getElementById("result");
                 let errorMsg = resultDiv.querySelector(".error-message");
                 if (!errorMsg) {
                     errorMsg = document.createElement("p");
@@ -296,6 +288,33 @@
                 errorMsg.style.display = "block";
                 resultDiv.className = "result show error";
             }
+
+            function copyToClipboard(button) {
+                if (!currentCode) return;
+
+                navigator.clipboard
+                    .writeText(currentCode)
+                    .then(() => {
+                        const originalText = button.textContent;
+                        button.textContent = "✓ Copied!";
+                        button.classList.add("copied");
+
+                        setTimeout(() => {
+                            button.textContent = originalText;
+                            button.classList.remove("copied");
+                        }, 2000);
+                    })
+                    .catch(() => {
+                        alert("Failed to copy to clipboard");
+                    });
+            }
+
+            // Allow Enter key to encode
+            document
+                .getElementById("port")
+                .addEventListener("keypress", (e) => {
+                    if (e.key === "Enter") getAndEncode();
+                });
         </script>
     </body>
 </html>
