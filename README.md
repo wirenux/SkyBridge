@@ -130,9 +130,9 @@ python-socketio
 
 ## Development Priorities
 1. ✅ Base62 encoding
-2. Python server scaffold (Flask setup)
+2. ✅ Python server scaffold (Flask setup)
 3. UDP listener implementation
 4. API endpoints (data, screenshot, code)
 5. Dashboard frontend
-6. Mobile PWA portal
+6. ✅ Portal
 7. Multi-simulator support expansion

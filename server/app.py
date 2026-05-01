@@ -1,6 +1,7 @@
+import socket
+
 from base62 import decode, encode
 from flask import Flask, jsonify, render_template, request
-import socket
 
 app = Flask(
     __name__,
@@ -8,20 +9,15 @@ app = Flask(
 )
 
 # Disable host header validation for local network access
-app.config['ENV'] = 'development'
-app.config['PREFERRED_URL_SCHEME'] = 'http'
-
-@app.before_request
-def before_request():
-    # Allow requests from any host (necessary for local network access)
-    pass
+app.config["ENV"] = "development"
+app.config["PREFERRED_URL_SCHEME"] = "http"
 
 
 def get_local_ip():
-    """Get the local IP address of the machine."""
+    # Get the local IP address of the machine.
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("8.8.8.8", 80))
+        s.connect(("8.8.8.8", 80))  # Connect to google DNS to get local ip
         ip = s.getsockname()[0]
         s.close()
         return ip
