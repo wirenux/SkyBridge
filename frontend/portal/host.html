@@ -4,13 +4,12 @@
         <meta charset="UTF-8" />
         <meta http-equiv="X-UA-Compatible" content="IE=edge" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>SkyBridge - Host</title>
-        <link rel="stylesheet" href="/assets/css/common.css" />
-        <link rel="stylesheet" href="/assets/css/host.css" />
+        <title>SkyBridge · Host</title>
+        <link rel="stylesheet" href="/assets/css/portal.css" />
     </head>
     <body>
         <div class="container">
-            <h1>🌉 SkyBridge Host</h1>
+            <h1>SKYBRIDGE</h1>
 
             <div class="nav-links">
                 <a href="/">Decode</a>
@@ -18,7 +17,7 @@
             </div>
 
             <div class="form-group">
-                <label for="port">Port (default: 5000):</label>
+                <label for="port">Dashboard port</label>
                 <input
                     type="number"
                     id="port"
@@ -29,15 +28,15 @@
                 />
             </div>
 
-            <button onclick="getAndEncode()">Get My Code</button>
+            <button onclick="getAndEncode()">Generate code</button>
 
             <div id="result" class="result">
                 <p>
-                    <span class="result-label">Code:</span>
+                    <span class="result-label">Code</span>
                     <span class="result-value" id="result-code"></span>
                 </p>
                 <button class="copy-btn" onclick="copyToClipboard(this)">
-                    Copy Code
+                    Copy code
                 </button>
             </div>
         </div>
@@ -46,73 +45,60 @@
             let currentCode = "";
 
             async function getAndEncode() {
-                const portInput = document.getElementById("port");
-                const port = parseInt(portInput.value) || 5000;
-
+                const port =
+                    parseInt(document.getElementById("port").value) || 5001;
                 if (port < 1 || port > 65535) {
                     showError("Port must be between 1 and 65535");
                     return;
                 }
-
                 try {
                     const response = await fetch(`/api/local-ip?port=${port}`);
                     const data = await response.json();
-
-                    if (data.success) {
-                        showResult(data);
-                    } else {
-                        showError(data.error || "Failed to get IP");
-                    }
-                } catch (error) {
-                    showError("Network error: " + error.message);
+                    data.success
+                        ? showResult(data)
+                        : showError(data.error || "Failed to get IP");
+                } catch (e) {
+                    showError("Network error: " + e.message);
                 }
             }
 
             function showResult(data) {
                 document.getElementById("result-code").textContent = data.code;
                 currentCode = data.code;
-
-                const resultDiv = document.getElementById("result");
-                resultDiv.className = "result show success";
-
-                const errorMsg = resultDiv.querySelector(".error-message");
-                if (errorMsg) errorMsg.style.display = "none";
+                const r = document.getElementById("result");
+                r.className = "result show success";
+                const err = r.querySelector(".error-message");
+                if (err) err.style.display = "none";
             }
 
             function showError(message) {
-                const resultDiv = document.getElementById("result");
-                let errorMsg = resultDiv.querySelector(".error-message");
-                if (!errorMsg) {
-                    errorMsg = document.createElement("p");
-                    errorMsg.className = "error-message error-text";
-                    resultDiv.insertBefore(errorMsg, resultDiv.firstChild);
+                const r = document.getElementById("result");
+                let err = r.querySelector(".error-message");
+                if (!err) {
+                    err = document.createElement("p");
+                    err.className = "error-message";
+                    r.insertBefore(err, r.firstChild);
                 }
-                errorMsg.textContent = `❌ ${message}`;
-                errorMsg.style.display = "block";
-                resultDiv.className = "result show error";
+                err.textContent = `❌ ${message}`;
+                err.style.display = "block";
+                r.className = "result show error";
             }
 
             function copyToClipboard(button) {
                 if (!currentCode) return;
-
                 navigator.clipboard
                     .writeText(currentCode)
                     .then(() => {
-                        const originalText = button.textContent;
                         button.textContent = "✓ Copied!";
                         button.classList.add("copied");
-
                         setTimeout(() => {
-                            button.textContent = originalText;
+                            button.textContent = "Copy code";
                             button.classList.remove("copied");
                         }, 2000);
                     })
-                    .catch(() => {
-                        alert("Failed to copy to clipboard");
-                    });
+                    .catch(() => alert("Failed to copy"));
             }
 
-            // Allow Enter key to encode
             document
                 .getElementById("port")
                 .addEventListener("keypress", (e) => {

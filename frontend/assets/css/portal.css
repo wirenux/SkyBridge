@@ -1,0 +1,247 @@
+@import url("https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Outfit:wght@300;400;600&display=swap");
+
+/* ── Variables ─────────────────────────────────────────────────────────────── */
+:root {
+    --bg: #0a0c10;
+    --surface: #111418;
+    --border: #1e2530;
+    --accent: #00d4ff;
+    --accent-dim: #004a5c;
+    --ok: #00e676;
+    --danger: #ff4444;
+    --text: #e8edf3;
+    --muted: #5a6a7a;
+    --mono: "Share Tech Mono", monospace;
+    --sans: "Outfit", sans-serif;
+}
+
+/* ── Reset ──────────────────────────────────────────────────────────────────── */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--sans);
+    background-color: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+}
+
+/* ── Container ──────────────────────────────────────────────────────────────── */
+.container {
+    width: 100%;
+    max-width: 440px;
+}
+
+/* ── Title ──────────────────────────────────────────────────────────────────── */
+h1 {
+    font-family: var(--mono);
+    font-size: 22px;
+    font-weight: 400;
+    letter-spacing: 3px;
+    color: var(--accent);
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+/* ── Nav ────────────────────────────────────────────────────────────────────── */
+.nav-links {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 28px;
+}
+
+.nav-links a {
+    flex: 1;
+    padding: 10px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    text-decoration: none;
+    border-radius: 6px;
+    text-align: center;
+    font-size: 13px;
+    font-family: var(--mono);
+    letter-spacing: 1px;
+    transition: all 0.2s;
+}
+
+.nav-links a:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.nav-links a.active {
+    background: var(--accent-dim);
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+/* ── Form group ─────────────────────────────────────────────────────────────── */
+.form-group {
+    margin-bottom: 16px;
+}
+
+label {
+    display: block;
+    font-size: 11px;
+    font-family: var(--mono);
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+}
+
+input {
+    width: 100%;
+    padding: 13px 16px;
+    font-size: 16px;
+    font-family: var(--mono);
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    transition: all 0.2s;
+    letter-spacing: 1px;
+}
+
+input::placeholder {
+    color: var(--muted);
+}
+
+input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.08);
+}
+
+/* ── Button ─────────────────────────────────────────────────────────────────── */
+button {
+    width: 100%;
+    padding: 13px 16px;
+    font-size: 14px;
+    font-family: var(--mono);
+    font-weight: 400;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    background: var(--accent-dim);
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 20px;
+}
+
+button:hover {
+    background: var(--accent);
+    color: var(--bg);
+}
+
+button:active {
+    opacity: 0.8;
+}
+
+button:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+/* ── Result card ────────────────────────────────────────────────────────────── */
+.result {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    display: none;
+}
+
+.result.show {
+    display: block;
+}
+.result.success {
+    border-color: var(--border);
+}
+.result.error {
+    border-color: var(--danger);
+}
+
+.result p {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+}
+
+.result p:last-of-type {
+    border-bottom: none;
+}
+
+.result-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
+    min-width: 60px;
+}
+
+.result-value {
+    font-family: var(--mono);
+    font-size: 14px;
+    color: var(--text);
+    text-align: right;
+    word-break: break-all;
+    flex: 1;
+    margin-left: 12px;
+}
+
+/* ── Copy / Link buttons ────────────────────────────────────────────────────── */
+.copy-btn,
+.link-button {
+    display: block;
+    width: 100%;
+    padding: 12px 16px;
+    font-size: 13px;
+    font-family: var(--mono);
+    letter-spacing: 1px;
+    text-align: center;
+    text-decoration: none;
+    border-radius: 0;
+    border: none;
+    border-top: 1px solid var(--border);
+    margin-bottom: 0;
+    background: transparent;
+    color: var(--accent);
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.copy-btn:hover,
+.link-button:hover {
+    background: var(--accent-dim);
+}
+
+.copy-btn.copied {
+    color: var(--ok);
+}
+
+/* ── Error text ─────────────────────────────────────────────────────────────── */
+.error-message {
+    color: var(--danger);
+    font-family: var(--mono);
+    font-size: 12px;
+    text-align: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+}

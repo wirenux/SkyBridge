@@ -3,143 +3,313 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link
+            rel="stylesheet"
+            href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        />
+        <link rel="stylesheet" href="/assets/css/common.css" />
+        <link rel="stylesheet" href="/assets/css/dashboard.css" />
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
         <title>SkyBridge · Dashboard</title>
     </head>
     <body>
-        <h1>SkyBridge · Dashboard</h1>
-        <p id="status">Connecting...</p>
-        <p id="last-update"></p>
+        <header>
+            <h1>SKYBRIDGE</h1>
+            <div class="status-pill">
+                <div class="status-dot" id="status-dot"></div>
+                <span id="status">Connecting...</span>
+            </div>
+        </header>
 
-        <h2>Altitude</h2>
-        <p id="alt"></p>
-        <p id="alt-msl"></p>
-        <p id="alt-agl"></p>
+        <div class="dashboard">
+            <!-- Map -->
+            <div class="card">
+                <div class="card-title">Position</div>
+                <div class="map-wrap">
+                    <div id="map"></div>
+                    <button id="follow-btn" onclick="toggleFollow()">
+                        📍 Following
+                    </button>
+                </div>
+            </div>
 
-        <h2>Navigation</h2>
-        <p id="hdg"></p>
-        <p id="lat"></p>
-        <p id="lon"></p>
+            <!-- Speed -->
+            <div class="card">
+                <div class="card-title">Speed</div>
+                <div class="speed-grid">
+                    <div class="speed-cell">
+                        <span class="data-label">GS</span>
+                        <span class="data-value" id="gs">—</span>
+                    </div>
+                    <div class="speed-cell">
+                        <span class="data-label">IAS</span>
+                        <span class="data-value highlight" id="ias">—</span>
+                    </div>
+                    <div class="speed-cell">
+                        <span class="data-label">TAS</span>
+                        <span class="data-value" id="tas">—</span>
+                    </div>
+                    <div class="speed-cell">
+                        <span class="data-label">MACH</span>
+                        <span class="data-value" id="mach">—</span>
+                    </div>
+                </div>
+            </div>
 
-        <h2>Speed</h2>
-        <p id="gs"></p>
-        <p id="ias"></p>
-        <p id="tas"></p>
-        <p id="mach"></p>
+            <!-- Navigation -->
+            <div class="card">
+                <div class="card-title">Navigation</div>
+                <div class="data-row">
+                    <span class="data-label">ALT</span>
+                    <span class="data-value highlight" id="alt">—</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">HDG</span>
+                    <span class="data-value highlight" id="hdg">—</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">VS</span>
+                    <span class="data-value" id="vs">—</span>
+                </div>
+            </div>
 
-        <h2>Vertical Speed</h2>
-        <p id="vs"></p>
+            <!-- Engines -->
+            <div class="card">
+                <div class="card-title">Engines</div>
+                <div id="engines"></div>
+            </div>
 
-        <h2>Engines</h2>
-        <div id="engines"></div>
+            <!-- Location -->
+            <div class="card">
+                <div class="card-title">Location</div>
+                <div class="data-row">
+                    <span class="data-label">LAT</span>
+                    <span class="data-value" id="lat">—</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">LON</span>
+                    <span class="data-value" id="lon">—</span>
+                </div>
+            </div>
 
-        <h2>Flaps</h2>
-        <p id="flaps"></p>
+            <!-- Systems -->
+            <div class="card">
+                <div class="card-title">Systems</div>
+                <div class="data-row">
+                    <span class="data-label">FLAPS</span>
+                    <span class="data-value" id="flaps">—</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">FUEL</span>
+                    <span class="data-value" id="fuel">—</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">AOA</span>
+                    <span class="data-value" id="aoa">—</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">G</span>
+                    <span class="data-value" id="g">—</span>
+                </div>
+            </div>
 
-        <h2>Other</h2>
-        <p id="fuel"></p>
-        <p id="aoa"></p>
-        <p id="g"></p>
+            <!-- Autopilot -->
+            <div class="card">
+                <div class="card-title">Autopilot</div>
+                <div class="ap-header">
+                    <span class="data-label">STATUS</span>
+                    <span class="ap-badge" id="ap-status">OFF</span>
+                </div>
+                <div id="ap-details"></div>
+            </div>
+        </div>
+        <!-- /.dashboard -->
 
-        <h2>Autopilot</h2>
-        <p id="ap-status"></p>
-        <div id="ap-details"></div>
+        <div class="footer-bar" id="last-update"></div>
 
         <script>
             const API_URL = "/api/data";
-            const REFRESH_MS = 1000;
+            const REFRESH_MS = 500;
+
+            let _map = null;
+            let _marker = null;
+            let _follow = true;
+
+            function initMap(lat, lon) {
+                _map = L.map("map", { zoomControl: true }).setView(
+                    [lat, lon],
+                    13,
+                );
+                L.tileLayer(
+                    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                    {
+                        attribution: "© OpenStreetMap",
+                    },
+                ).addTo(_map);
+                _marker = L.marker([lat, lon]).addTo(_map);
+                _map.on("dragstart", () => {
+                    _follow = false;
+                    updateFollowBtn();
+                });
+            }
+
+            function toggleFollow() {
+                _follow = !_follow;
+                updateFollowBtn();
+                if (_follow && _marker) _map.setView(_marker.getLatLng());
+            }
+
+            function updateFollowBtn() {
+                const btn = document.getElementById("follow-btn");
+                btn.textContent = _follow ? "📍 Following" : "📍 Follow plane";
+                btn.classList.toggle("active", _follow);
+            }
 
             function fmt(val, decimals = 1, unit = "") {
-                if (val === undefined || val === null) return "N/A";
-                return `${parseFloat(val).toFixed(decimals)}${unit}`;
+                if (val === undefined || val === null) return "—";
+                return `${parseFloat(val).toFixed(decimals)}${unit ? '<span class="unit">' + unit + "</span>" : ""}`;
+            }
+
+            function setLive(isLive) {
+                document.getElementById("status-dot").className =
+                    "status-dot " + (isLive ? "live" : "error");
+                document.getElementById("status").textContent = isLive
+                    ? "Live"
+                    : "No signal";
             }
 
             function update(data) {
-                // Status
-                document.getElementById("status").textContent = "Live";
+                setLive(true);
                 document.getElementById("last-update").textContent =
                     `Last update: ${new Date().toLocaleTimeString()}`;
 
-                // Altitude
-                const altLabel = data.alt_agl < 1000 ? "AGL" : "MSL";
-                document.getElementById("alt").textContent =
-                    `ALT: ${fmt(data.alt, 0, " ft")} (${altLabel})`;
-                document.getElementById("alt-msl").textContent =
-                    `MSL: ${fmt(data.alt_msl, 0, " ft")}`;
-                document.getElementById("alt-agl").textContent =
-                    `AGL: ${fmt(data.alt_agl, 0, " ft")}`;
+                // Map
+                if (!_map) {
+                    initMap(data.lat, data.lon);
+                } else {
+                    _marker.setLatLng([data.lat, data.lon]);
+                    if (_follow) _map.setView([data.lat, data.lon]);
+                }
 
-                // Navigation
-                document.getElementById("hdg").textContent =
-                    `HDG: ${fmt(data.hdg, 1, "°")}`;
-                document.getElementById("lat").textContent =
-                    `LAT: ${fmt(data.lat, 6)}`;
-                document.getElementById("lon").textContent =
-                    `LON: ${fmt(data.lon, 6)}`;
+                // Altitude
+                const isAGL = data.alt_agl < 1000;
+                document.getElementById("alt").innerHTML =
+                    `${fmt(data.alt, 0)} <span class="unit">ft</span><span class="alt-badge">${isAGL ? "AGL" : "MSL"}</span>`;
 
                 // Speed
-                document.getElementById("gs").textContent =
-                    `GS:   ${fmt(data.gs, 1, " kt")}`;
-                document.getElementById("ias").textContent =
-                    `IAS:  ${fmt(data.ias, 1, " kt")}`;
-                document.getElementById("tas").textContent =
-                    `TAS:  ${fmt(data.tas, 1, " kt")}`;
-                document.getElementById("mach").textContent =
-                    `MACH: ${fmt(data.mach, 3)}`;
+                document.getElementById("gs").innerHTML = fmt(
+                    data.gs,
+                    1,
+                    " kt",
+                );
+                document.getElementById("ias").innerHTML = fmt(
+                    data.ias,
+                    1,
+                    " kt",
+                );
+                document.getElementById("tas").innerHTML = fmt(
+                    data.tas,
+                    1,
+                    " kt",
+                );
+                document.getElementById("mach").innerHTML = fmt(data.mach, 3);
 
-                // VS
-                document.getElementById("vs").textContent =
-                    `VS: ${fmt(data.vs, 0, " fpm")}`;
+                // Navigation
+                document.getElementById("hdg").innerHTML = fmt(
+                    data.hdg,
+                    1,
+                    "°",
+                );
+                document.getElementById("vs").innerHTML = fmt(
+                    data.vs,
+                    0,
+                    " fpm",
+                );
+                document.getElementById("lat").innerHTML = fmt(data.lat, 6);
+                document.getElementById("lon").innerHTML = fmt(data.lon, 6);
 
                 // Engines
                 const engDiv = document.getElementById("engines");
                 engDiv.innerHTML = "";
                 if (data.motors && data.motors.length > 0) {
                     data.motors.forEach((m) => {
-                        const p = document.createElement("p");
-                        const isJet = m.n1 > 1;
+                        const isJet = m.is_jet;
                         const isRotor = data.rotor > 1;
-                        if (isRotor) {
-                            p.textContent = `ROTOR: ${fmt(data.rotor, 0, " rpm")}`;
-                        } else if (isJet) {
-                            p.textContent = `ENG${m.id} N1: ${fmt(m.n1, 1, "%")}`;
-                        } else {
-                            p.textContent = `ENG${m.id} RPM: ${fmt(m.rpm, 0)}`;
-                        }
-                        engDiv.appendChild(p);
+                        const pct = isJet
+                            ? m.n1
+                            : isRotor
+                              ? data.rotor / 30
+                              : (m.rpm / 2700) * 100;
+                        const valStr = isRotor
+                            ? `${parseFloat(data.rotor).toFixed(0)} <span class="unit">rpm</span>`
+                            : isJet
+                              ? `${parseFloat(m.n1).toFixed(1)} <span class="unit">%</span>`
+                              : `${parseFloat(m.rpm).toFixed(0)} <span class="unit">rpm</span>`;
+                        const label = isRotor ? "ROTOR" : `ENG ${m.id}`;
+                        engDiv.innerHTML += `
+                            <div class="engine-row">
+                                <span class="engine-id">${label}</span>
+                                <div class="engine-bar-wrap">
+                                    <div class="engine-bar" style="width:${Math.min(pct, 100)}%"></div>
+                                </div>
+                                <span class="engine-val">${valStr}</span>
+                            </div>`;
                     });
                 } else {
-                    engDiv.textContent = "No engine data";
+                    engDiv.innerHTML = `<div class="data-row"><span class="data-label">—</span></div>`;
                 }
 
-                // Flaps
-                document.getElementById("flaps").textContent =
-                    `FLAPS: notch ${fmt(data.flaps_index, 0)} · ${fmt(data.flaps_deg, 1, "°")}`;
-
-                // Other
-                document.getElementById("fuel").textContent =
-                    `FUEL: ${fmt(data.fuel_lbs, 1, " lbs")}`;
-                document.getElementById("aoa").textContent =
-                    `AOA:  ${fmt(data.aoa, 2, "°")}`;
-                document.getElementById("g").textContent =
-                    `G:    ${fmt(data.g, 2, " g")}`;
+                // Systems
+                document.getElementById("flaps").innerHTML =
+                    `${fmt(data.flaps_index, 0)} <span class="unit">notch</span> · ${fmt(data.flaps_deg, 1, "°")}`;
+                document.getElementById("fuel").innerHTML = fmt(
+                    data.fuel_gal,
+                    1,
+                    " gal",
+                );
+                document.getElementById("aoa").innerHTML = fmt(
+                    data.aoa,
+                    2,
+                    "°",
+                );
+                document.getElementById("g").innerHTML = fmt(data.g, 2, " g");
 
                 // Autopilot
                 const ap = data.ap;
-                document.getElementById("ap-status").textContent =
-                    `AP: ${ap && ap.on ? "ON" : "OFF"}`;
+                const apOn = ap && ap.on;
+                const badge = document.getElementById("ap-status");
+                badge.textContent = apOn ? "ON" : "OFF";
+                badge.className = "ap-badge" + (apOn ? " on" : "");
 
                 const apDiv = document.getElementById("ap-details");
                 apDiv.innerHTML = "";
-                if (ap && ap.on) {
-                    const lines = [
-                        `ALT: ${ap.alt_on ? fmt(ap.alt_val, 0, " ft") : "---"}`,
-                        `IAS: ${ap.ias_on ? fmt(ap.ias_val, 0, " kt") : "---"}`,
-                        `HDG: ${ap.hdg_on ? fmt(ap.hdg_val, 0, "°") : "---"}`,
+                if (apOn) {
+                    const rows = [
+                        [
+                            "ALT",
+                            ap.alt_on
+                                ? `${parseFloat(ap.alt_val).toFixed(0)} <span class="unit">ft</span>`
+                                : "—",
+                        ],
+                        [
+                            "IAS",
+                            ap.ias_on
+                                ? `${parseFloat(ap.ias_val).toFixed(0)} <span class="unit">kt</span>`
+                                : "—",
+                        ],
+                        [
+                            "HDG",
+                            ap.hdg_on
+                                ? `${parseFloat(ap.hdg_val).toFixed(0)}<span class="unit">°</span>`
+                                : "—",
+                        ],
                     ];
-                    lines.forEach((line) => {
-                        const p = document.createElement("p");
-                        p.textContent = line;
-                        apDiv.appendChild(p);
+                    rows.forEach(([label, val]) => {
+                        apDiv.innerHTML += `
+                            <div class="data-row">
+                                <span class="data-label">${label}</span>
+                                <span class="data-value ${val === "—" ? "" : "ok"}">${val}</span>
+                            </div>`;
                     });
                 }
             }
@@ -151,12 +321,12 @@
                     if (Object.keys(data).length > 0) {
                         update(data);
                     } else {
+                        setLive(false);
                         document.getElementById("status").textContent =
-                            "Waiting for sim data...";
+                            "Waiting for sim...";
                     }
                 } catch (e) {
-                    document.getElementById("status").textContent =
-                        "Error: " + e.message;
+                    setLive(false);
                 }
             }
 

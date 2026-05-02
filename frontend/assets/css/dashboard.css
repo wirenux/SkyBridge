@@ -1,0 +1,318 @@
+@import url("https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Outfit:wght@300;400;600&display=swap");
+
+/* ── Variables ─────────────────────────────────────────────────────────────── */
+:root {
+    --bg: #0a0c10;
+    --surface: #111418;
+    --border: #1e2530;
+    --accent: #00d4ff;
+    --accent-dim: #004a5c;
+    --warn: #ffaa00;
+    --ok: #00e676;
+    --danger: #ff4444;
+    --text: #e8edf3;
+    --muted: #5a6a7a;
+    --mono: "Share Tech Mono", monospace;
+    --sans: "Outfit", sans-serif;
+}
+
+/* ── Reset ──────────────────────────────────────────────────────────────────── */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--sans);
+    background-color: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+    min-height: 100vh;
+}
+
+/* ── Header ─────────────────────────────────────────────────────────────────── */
+header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+header h1 {
+    font-family: var(--mono);
+    font-size: 18px;
+    font-weight: 400;
+    letter-spacing: 2px;
+    color: var(--accent);
+}
+
+.status-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-family: var(--mono);
+    color: var(--muted);
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--muted);
+    transition: background 0.3s;
+}
+
+.status-dot.live {
+    background: var(--ok);
+    box-shadow: 0 0 8px var(--ok);
+    animation: pulse 2s infinite;
+}
+
+.status-dot.error {
+    background: var(--danger);
+}
+
+@keyframes pulse {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.4;
+    }
+}
+
+/* ── Layout ─────────────────────────────────────────────────────────────────── */
+.dashboard {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+/* ── Section card ───────────────────────────────────────────────────────────── */
+.card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.card-title {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--muted);
+    text-transform: uppercase;
+    padding: 10px 16px 8px;
+    border-bottom: 1px solid var(--border);
+}
+
+/* ── Data rows ──────────────────────────────────────────────────────────────── */
+.data-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 11px 16px;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+}
+
+.data-row:last-child {
+    border-bottom: none;
+}
+.data-row:hover {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.data-label {
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.5px;
+    min-width: 80px;
+}
+
+.data-value {
+    font-family: var(--mono);
+    font-size: 16px;
+    color: var(--text);
+    text-align: right;
+}
+
+.data-value .unit {
+    font-size: 11px;
+    color: var(--muted);
+    margin-left: 3px;
+}
+
+.data-value.highlight {
+    color: var(--accent);
+}
+.data-value.warn {
+    color: var(--warn);
+}
+.data-value.ok {
+    color: var(--ok);
+}
+
+/* ── Alt badge ──────────────────────────────────────────────────────────────── */
+.alt-badge {
+    font-size: 10px;
+    font-family: var(--mono);
+    padding: 2px 6px;
+    border-radius: 3px;
+    background: var(--accent-dim);
+    color: var(--accent);
+    margin-left: 8px;
+    letter-spacing: 1px;
+}
+
+/* ── Speed grid (4 colonnes) ────────────────────────────────────────────────── */
+.speed-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+}
+
+.speed-cell {
+    padding: 14px 16px;
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+}
+
+.speed-cell:nth-child(2n) {
+    border-right: none;
+}
+.speed-cell:nth-child(3),
+.speed-cell:nth-child(4) {
+    border-bottom: none;
+}
+
+.speed-cell .data-label {
+    display: block;
+    margin-bottom: 4px;
+}
+.speed-cell .data-value {
+    font-size: 22px;
+}
+
+/* ── Engines ────────────────────────────────────────────────────────────────── */
+.engine-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+}
+
+.engine-row:last-child {
+    border-bottom: none;
+}
+
+.engine-id {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    min-width: 48px;
+}
+
+.engine-bar-wrap {
+    flex: 1;
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.engine-bar {
+    height: 100%;
+    border-radius: 3px;
+    background: var(--accent);
+    transition: width 0.8s ease;
+}
+
+.engine-val {
+    font-family: var(--mono);
+    font-size: 14px;
+    min-width: 60px;
+    text-align: right;
+}
+
+/* ── Autopilot ──────────────────────────────────────────────────────────────── */
+.ap-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 11px 16px;
+    border-bottom: 1px solid var(--border);
+}
+
+.ap-badge {
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 3px 10px;
+    border-radius: 4px;
+    background: var(--border);
+    color: var(--muted);
+}
+
+.ap-badge.on {
+    background: rgba(0, 230, 118, 0.15);
+    color: var(--ok);
+    box-shadow: 0 0 12px rgba(0, 230, 118, 0.1);
+}
+
+/* ── Map ────────────────────────────────────────────────────────────────────── */
+.map-wrap {
+    position: relative;
+}
+
+#map {
+    width: 100%;
+    height: 280px;
+}
+
+#follow-btn {
+    position: absolute;
+    bottom: 12px;
+    right: 12px;
+    z-index: 1000;
+    width: auto;
+    padding: 8px 14px;
+    font-size: 12px;
+    font-family: var(--mono);
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.5px;
+}
+
+#follow-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+#follow-btn.active {
+    border-color: var(--ok);
+    color: var(--ok);
+}
+
+/* ── Last update ────────────────────────────────────────────────────────────── */
+.footer-bar {
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    padding: 12px;
+}

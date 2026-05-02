@@ -4,13 +4,12 @@
         <meta charset="UTF-8" />
         <meta http-equiv="X-UA-Compatible" content="IE=edge" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>SkyBridge - Portal</title>
-        <link rel="stylesheet" href="/assets/css/common.css" />
-        <link rel="stylesheet" href="/assets/css/decode.css" />
+        <title>SkyBridge · Portal</title>
+        <link rel="stylesheet" href="/assets/css/portal.css" />
     </head>
     <body>
         <div class="container">
-            <h1>🌉 SkyBridge</h1>
+            <h1>SKYBRIDGE</h1>
 
             <div class="nav-links">
                 <a href="/" class="active">Decode</a>
@@ -18,37 +17,36 @@
             </div>
 
             <div class="form-group">
-                <label for="code">Enter 9-character code:</label>
+                <label for="code">9-character code</label>
                 <input
                     type="text"
                     id="code"
                     placeholder="e.g., SN17xl9Y0"
                     maxlength="9"
                     autocomplete="off"
+                    autocorrect="off"
+                    autocapitalize="none"
+                    spellcheck="false"
                 />
             </div>
 
-            <button onclick="decodeCode()">Decode</button>
+            <button onclick="decodeCode()">Open dashboard</button>
 
             <div id="result" class="result">
                 <p>
-                    <span class="result-label">Code:</span>
+                    <span class="result-label">Code</span>
                     <span class="result-value" id="result-code"></span>
                 </p>
                 <p>
-                    <span class="result-label">IP:</span>
+                    <span class="result-label">IP</span>
                     <span class="result-value" id="result-ip"></span>
                 </p>
                 <p>
-                    <span class="result-label">Port:</span>
+                    <span class="result-label">Port</span>
                     <span class="result-value" id="result-port"></span>
                 </p>
-                <p>
-                    <span class="result-label">Link:</span>
-                    <span class="result-value" id="result-link"></span>
-                </p>
                 <a id="link-btn" class="link-button" target="_blank"
-                    >Open Dashboard</a
+                    >Open dashboard →</a
                 >
             </div>
         </div>
@@ -57,35 +55,28 @@
             const codeInput = document.getElementById("code");
             const resultDiv = document.getElementById("result");
 
-            // Allow Enter key to decode
             codeInput.addEventListener("keypress", (e) => {
                 if (e.key === "Enter") decodeCode();
             });
 
             async function decodeCode() {
                 const code = codeInput.value.trim();
-
                 if (!code) {
                     showError("Please enter a code");
                     return;
                 }
-
                 if (code.length !== 9) {
                     showError("Code must be exactly 9 characters");
                     return;
                 }
-
                 try {
                     const response = await fetch(`/api/decode/${code}`);
                     const data = await response.json();
-
-                    if (data.success) {
-                        showResult(data);
-                    } else {
-                        showError(data.error || "Failed to decode code");
-                    }
-                } catch (error) {
-                    showError("Network error: " + error.message);
+                    data.success
+                        ? showResult(data)
+                        : showError(data.error || "Failed to decode");
+                } catch (e) {
+                    showError("Network error: " + e.message);
                 }
             }
 
@@ -93,27 +84,22 @@
                 document.getElementById("result-code").textContent = data.code;
                 document.getElementById("result-ip").textContent = data.ip;
                 document.getElementById("result-port").textContent = data.port;
-                document.getElementById("result-link").textContent = data.link;
-
                 const linkBtn = document.getElementById("link-btn");
                 linkBtn.href = data.link + "/dashboard";
-
                 resultDiv.className = "result show success";
-
-                // Hide error message if any
-                const errorMsg = resultDiv.querySelector(".error-message");
-                if (errorMsg) errorMsg.style.display = "none";
+                const err = resultDiv.querySelector(".error-message");
+                if (err) err.style.display = "none";
             }
 
             function showError(message) {
-                let errorMsg = resultDiv.querySelector(".error-message");
-                if (!errorMsg) {
-                    errorMsg = document.createElement("p");
-                    errorMsg.className = "error-message error-text";
-                    resultDiv.insertBefore(errorMsg, resultDiv.firstChild);
+                let err = resultDiv.querySelector(".error-message");
+                if (!err) {
+                    err = document.createElement("p");
+                    err.className = "error-message";
+                    resultDiv.insertBefore(err, resultDiv.firstChild);
                 }
-                errorMsg.textContent = `❌ ${message}`;
-                errorMsg.style.display = "block";
+                err.textContent = `❌ ${message}`;
+                err.style.display = "block";
                 resultDiv.className = "result show error";
             }
         </script>
