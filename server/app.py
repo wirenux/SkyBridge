@@ -1,5 +1,6 @@
 import socket
 
+import udp_listener
 from base62 import decode, encode
 from flask import Flask, jsonify, render_template, request
 
@@ -35,6 +36,11 @@ def web():
 @app.route("/host")
 def host():
     return render_template("portal/host.html")
+
+
+@app.route("/api/data")
+def get_data():
+    return jsonify(udp_listener.get_data())
 
 
 @app.route("/api/decode/<code>", methods=["GET"])
