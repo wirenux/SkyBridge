@@ -38,6 +38,11 @@ def host():
     return render_template("portal/host.html")
 
 
+@app.route("/dashboard")
+def dashboard():
+    return render_template("dashboard/index.html")
+
+
 @app.route("/api/data")
 def get_data():
     return jsonify(udp_listener.get_data())
