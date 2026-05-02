@@ -5,9 +5,14 @@ import threading
 HOST = "0.0.0.0"
 PORT = 5005
 
-# Données partagées entre le listener UDP et Flask
 latest_data: dict = {}
 data_lock = threading.Lock()
+_socketio = None  # injecté depuis main.py
+
+
+def init(sio):
+    global _socketio
+    _socketio = sio
 
 
 def start(port: int = PORT):
@@ -17,10 +22,12 @@ def start(port: int = PORT):
 
     while True:
         try:
-            raw, addr = sock.recvfrom(4096)
+            raw, _ = sock.recvfrom(4096)
             parsed = json.loads(raw.decode("utf-8"))
             with data_lock:
                 latest_data.update(parsed)
+            if _socketio:
+                _socketio.emit("flight_data", parsed)
         except Exception as e:
             print(f"[UDP] Error: {e}")
 
