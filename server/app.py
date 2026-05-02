@@ -1,8 +1,10 @@
 import socket
+import threading
 
 import udp_listener
 from base62 import decode, encode
 from flask import Flask, jsonify, render_template, request
+from flask_socketio import SocketIO
 
 app = Flask(
     __name__,
@@ -11,16 +13,13 @@ app = Flask(
     static_url_path="/assets",
 )
 
-# Disable host header validation for local network access
-app.config["ENV"] = "development"
-app.config["PREFERRED_URL_SCHEME"] = "http"
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 
 def get_local_ip():
-    # Get the local IP address of the machine.
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("8.8.8.8", 80))  # Connect to google DNS to get local ip
+        s.connect(("8.8.8.8", 80))
         ip = s.getsockname()[0]
         s.close()
         return ip
@@ -50,10 +49,8 @@ def get_data():
 
 @app.route("/api/decode/<code>", methods=["GET"])
 def decode_code(code: str):
-    # Decode base62 code back to IP:port
     try:
         ip, port = decode(code)
-        print(f"SUCCESS: http://{ip}:{port}")
         return jsonify(
             {
                 "success": True,
@@ -64,30 +61,25 @@ def decode_code(code: str):
             }
         )
     except Exception as e:
-        print(f"ERROR: {str(e)}")
         return jsonify({"success": False, "error": str(e)}), 400
 
 
 @app.route("/api/encode", methods=["POST"])
 def encode_ip():
-    # Encode IP:port to base62 code
     try:
         data = request.json
-        ip = data.get("ip")
-        port = data.get("port")
-
+        ip, port = data.get("ip"), data.get("port")
         if not ip or not port:
             return jsonify({"success": False, "error": "Missing IP or port"}), 400
-
-        code = encode(ip, int(port))
-        return jsonify({"success": True, "ip": ip, "port": port, "code": code})
+        return jsonify(
+            {"success": True, "ip": ip, "port": port, "code": encode(ip, int(port))}
+        )
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 400
 
 
 @app.route("/api/local-ip", methods=["GET"])
 def get_local_ip_endpoint():
-    # Get local IP and optionally encode with port
     try:
         local_ip = get_local_ip()
         port = request.args.get("port", 5000, type=int)
