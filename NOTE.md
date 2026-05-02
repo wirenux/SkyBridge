@@ -7,23 +7,31 @@ Mobile -> skybridge.test (skybridge is host 24/7 on external server (just the po
 Enter code -> click go
 Redirect to LOCAL-IP:PORT/dashboard
 
+USE Web Socket Instead of GET call
+
 Data to get:
 
-ALT & ALT RAD (compare to ground)
-HDG
-RPM / N1
-GS // IAS // TAS // MACH
-VS
-LAT
-LON
-FUEL GAL / L // %
-AOA
-G
-FLAPS
+✅ALT & ALT RAD (compare to ground)
+✅ HDG
+✅ RPM / N1
+✅ GS // IAS // TAS // MACH
+✅ VS
+✅ LAT
+✅ LON
+✅ FUEL GAL / ✅ gal // %
+✅ AOA
+✅ G
+✅ FLAPS
 Plane Name
 Plane NUMBER
+Plane Side image
+Nav Ball
 TEMP ºC
+TRIM
+GEAR
+SPOILER
 
+After Burner ON/OFF Status next to engine %
 
 Current Auto pilot data:
 
