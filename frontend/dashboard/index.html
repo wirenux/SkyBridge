@@ -23,16 +23,24 @@
 
         <div class="dashboard">
             <div class="card">
-                <div class="card-title">Heading</div>
-                <div class="hdg-instrument">
-                    <canvas id="hdg-tape"></canvas>
-                    <div class="hdg-readout" id="hdg-readout">000°</div>
+                <div class="card-title" onclick="toggleCard(this)">
+                    Heading
+                    <span class="card-chevron">▾</span>
+                </div>
+                <div class="card-body">
+                    <div class="hdg-instrument">
+                        <canvas id="hdg-tape"></canvas>
+                        <div class="hdg-readout" id="hdg-readout">000°</div>
+                    </div>
                 </div>
             </div>
 
             <!-- Map -->
             <div class="card">
-                <div class="card-title">Position</div>
+                <div class="card-title" onclick="toggleCard(this)">
+                    Position
+                    <span class="card-chevron">▾</span>
+                </div>
                 <div class="map-wrap">
                     <div id="map"></div>
                     <button id="follow-btn" onclick="toggleFollow()">
@@ -42,7 +50,10 @@
             </div>
 
             <div class="card">
-                <div class="card-title">Nav Ball</div>
+                <div class="card-title" onclick="toggleCard(this)">
+                    Nav Ball
+                    <span class="card-chevron">▾</span>
+                </div>
                 <div class="adi-instrument">
                     <canvas id="adi-canvas"></canvas>
                 </div>
@@ -50,7 +61,10 @@
 
             <!-- Speed -->
             <div class="card">
-                <div class="card-title">Speed</div>
+                <div class="card-title" onclick="toggleCard(this)">
+                    Speed
+                    <span class="card-chevron">▾</span>
+                </div>
                 <div class="speed-grid">
                     <div class="speed-cell">
                         <span class="data-label">GS</span>
@@ -73,7 +87,10 @@
 
             <!-- Navigation -->
             <div class="card">
-                <div class="card-title">Navigation</div>
+                <div class="card-title" onclick="toggleCard(this)">
+                    Navigation
+                    <span class="card-chevron">▾</span>
+                </div>
                 <div class="data-row">
                     <span class="data-label">ALT</span>
                     <span class="data-value highlight" id="alt">—</span>
@@ -90,13 +107,19 @@
 
             <!-- Engines -->
             <div class="card">
-                <div class="card-title">Engines</div>
+                <div class="card-title" onclick="toggleCard(this)">
+                    Engines
+                    <span class="card-chevron">▾</span>
+                </div>
                 <div id="engines"></div>
             </div>
 
             <!-- Location -->
             <div class="card">
-                <div class="card-title">Location</div>
+                <div class="card-title" onclick="toggleCard(this)">
+                    Location
+                    <span class="card-chevron">▾</span>
+                </div>
                 <div class="data-row">
                     <span class="data-label">LAT</span>
                     <span class="data-value" id="lat">—</span>
@@ -109,7 +132,10 @@
 
             <!-- Systems -->
             <div class="card">
-                <div class="card-title">Systems</div>
+                <div class="card-title" onclick="toggleCard(this)">
+                    Systems
+                    <span class="card-chevron">▾</span>
+                </div>
                 <div class="data-row">
                     <span class="data-label">Gear</span>
                     <span class="ap-badge" id="gear-status">-</span>
@@ -134,7 +160,10 @@
 
             <!-- Autopilot -->
             <div class="card">
-                <div class="card-title">Autopilot</div>
+                <div class="card-title" onclick="toggleCard(this)">
+                    Autopilot
+                    <span class="card-chevron">▾</span>
+                </div>
                 <div class="ap-header">
                     <span class="data-label">STATUS</span>
                     <span class="ap-badge" id="ap-status">OFF</span>
@@ -171,6 +200,21 @@
             let _pitchTarget = 0;
             let _bankTarget = 0;
             let _adiAnimId = null;
+
+            function toggleCard(titleEl) {
+                const card = titleEl.closest(".card");
+                card.classList.toggle("collapsed");
+
+                if (!card.classList.contains("collapsed")) {
+                    setTimeout(() => {
+                        if (card.querySelector("#hdg-tape"))
+                            drawHdgTape(_hdgCurrent);
+                        if (card.querySelector("#adi-canvas"))
+                            drawADI(_pitchCurrent, _bankCurrent);
+                        if (card.querySelector("#map")) _map?.invalidateSize();
+                    }, 320);
+                }
+            }
 
             function drawADI(pitch, bank) {
                 const canvas = ADI_CANVAS;
