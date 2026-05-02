@@ -1,4 +1,5 @@
 Python script run on host + msfs mod
+MOD Upload data to port XXXX and python script get data from local port XXXX
 Msfs mod open -> LOCAL-IP-PYTHON:PORT/host
 host/ -> get my code
 
@@ -15,7 +16,7 @@ GS // IAS // TAS // MACH
 VS
 LAT
 LON
-FUAL
+FUEL GAL / L // %
 AOA
 G
 
