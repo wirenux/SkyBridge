@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>SkyBridge · Dashboard</title>
+    </head>
+    <body>
+        <h1>SkyBridge · Dashboard</h1>
+        <p id="status">Connecting...</p>
+        <p id="last-update"></p>
+
+        <h2>Altitude</h2>
+        <p id="alt"></p>
+        <p id="alt-msl"></p>
+        <p id="alt-agl"></p>
+
+        <h2>Navigation</h2>
+        <p id="hdg"></p>
+        <p id="lat"></p>
+        <p id="lon"></p>
+
+        <h2>Speed</h2>
+        <p id="gs"></p>
+        <p id="ias"></p>
+        <p id="tas"></p>
+        <p id="mach"></p>
+
+        <h2>Vertical Speed</h2>
+        <p id="vs"></p>
+
+        <h2>Engines</h2>
+        <div id="engines"></div>
+
+        <h2>Flaps</h2>
+        <p id="flaps"></p>
+
+        <h2>Other</h2>
+        <p id="fuel"></p>
+        <p id="aoa"></p>
+        <p id="g"></p>
+
+        <h2>Autopilot</h2>
+        <p id="ap-status"></p>
+        <div id="ap-details"></div>
+
+        <script>
+            const API_URL = "/api/data";
+            const REFRESH_MS = 1000;
+
+            function fmt(val, decimals = 1, unit = "") {
+                if (val === undefined || val === null) return "N/A";
+                return `${parseFloat(val).toFixed(decimals)}${unit}`;
+            }
+
+            function update(data) {
+                // Status
+                document.getElementById("status").textContent = "Live";
+                document.getElementById("last-update").textContent =
+                    `Last update: ${new Date().toLocaleTimeString()}`;
+
+                // Altitude
+                const altLabel = data.alt_agl < 1000 ? "AGL" : "MSL";
+                document.getElementById("alt").textContent =
+                    `ALT: ${fmt(data.alt, 0, " ft")} (${altLabel})`;
+                document.getElementById("alt-msl").textContent =
+                    `MSL: ${fmt(data.alt_msl, 0, " ft")}`;
+                document.getElementById("alt-agl").textContent =
+                    `AGL: ${fmt(data.alt_agl, 0, " ft")}`;
+
+                // Navigation
+                document.getElementById("hdg").textContent =
+                    `HDG: ${fmt(data.hdg, 1, "°")}`;
+                document.getElementById("lat").textContent =
+                    `LAT: ${fmt(data.lat, 6)}`;
+                document.getElementById("lon").textContent =
+                    `LON: ${fmt(data.lon, 6)}`;
+
+                // Speed
+                document.getElementById("gs").textContent =
+                    `GS:   ${fmt(data.gs, 1, " kt")}`;
+                document.getElementById("ias").textContent =
+                    `IAS:  ${fmt(data.ias, 1, " kt")}`;
+                document.getElementById("tas").textContent =
+                    `TAS:  ${fmt(data.tas, 1, " kt")}`;
+                document.getElementById("mach").textContent =
+                    `MACH: ${fmt(data.mach, 3)}`;
+
+                // VS
+                document.getElementById("vs").textContent =
+                    `VS: ${fmt(data.vs, 0, " fpm")}`;
+
+                // Engines
+                const engDiv = document.getElementById("engines");
+                engDiv.innerHTML = "";
+                if (data.motors && data.motors.length > 0) {
+                    data.motors.forEach((m) => {
+                        const p = document.createElement("p");
+                        const isJet = m.n1 > 1;
+                        const isRotor = data.rotor > 1;
+                        if (isRotor) {
+                            p.textContent = `ROTOR: ${fmt(data.rotor, 0, " rpm")}`;
+                        } else if (isJet) {
+                            p.textContent = `ENG${m.id} N1: ${fmt(m.n1, 1, "%")}`;
+                        } else {
+                            p.textContent = `ENG${m.id} RPM: ${fmt(m.rpm, 0)}`;
+                        }
+                        engDiv.appendChild(p);
+                    });
+                } else {
+                    engDiv.textContent = "No engine data";
+                }
+
+                // Flaps
+                document.getElementById("flaps").textContent =
+                    `FLAPS: notch ${fmt(data.flaps_index, 0)} · ${fmt(data.flaps_deg, 1, "°")}`;
+
+                // Other
+                document.getElementById("fuel").textContent =
+                    `FUEL: ${fmt(data.fuel_lbs, 1, " lbs")}`;
+                document.getElementById("aoa").textContent =
+                    `AOA:  ${fmt(data.aoa, 2, "°")}`;
+                document.getElementById("g").textContent =
+                    `G:    ${fmt(data.g, 2, " g")}`;
+
+                // Autopilot
+                const ap = data.ap;
+                document.getElementById("ap-status").textContent =
+                    `AP: ${ap && ap.on ? "ON" : "OFF"}`;
+
+                const apDiv = document.getElementById("ap-details");
+                apDiv.innerHTML = "";
+                if (ap && ap.on) {
+                    const lines = [
+                        `ALT: ${ap.alt_on ? fmt(ap.alt_val, 0, " ft") : "---"}`,
+                        `IAS: ${ap.ias_on ? fmt(ap.ias_val, 0, " kt") : "---"}`,
+                        `HDG: ${ap.hdg_on ? fmt(ap.hdg_val, 0, "°") : "---"}`,
+                    ];
+                    lines.forEach((line) => {
+                        const p = document.createElement("p");
+                        p.textContent = line;
+                        apDiv.appendChild(p);
+                    });
+                }
+            }
+
+            async function poll() {
+                try {
+                    const res = await fetch(API_URL);
+                    const data = await res.json();
+                    if (Object.keys(data).length > 0) {
+                        update(data);
+                    } else {
+                        document.getElementById("status").textContent =
+                            "Waiting for sim data...";
+                    }
+                } catch (e) {
+                    document.getElementById("status").textContent =
+                        "Error: " + e.message;
+                }
+            }
+
+            poll();
+            setInterval(poll, REFRESH_MS);
+        </script>
+    </body>
+</html>
