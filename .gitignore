@@ -1,2 +1,5 @@
 .DS_Store
 mod/lib
+server/__pycache__
+mod/bin
+mod/obj
