@@ -1,5 +1,5 @@
 Python script run on host + msfs mod
-MOD Upload data to port XXXX and python script get data from local port XXXX
+MOD Upload data to port 5005 and python script get data from local port XXXX
 Msfs mod open -> LOCAL-IP-PYTHON:PORT/host
 host/ -> get my code
 
@@ -19,6 +19,10 @@ LON
 FUEL GAL / L // %
 AOA
 G
+FLAPS
+Plane Name
+Plane NUMBER
+TEMP ºC
 
 
 Current Auto pilot data:
