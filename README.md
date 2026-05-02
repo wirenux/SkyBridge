@@ -19,7 +19,7 @@ SkyBridge is a real-time flight simulator mod for MSFS 2020 that bridges in-game
 
 ### UDP Communication Protocol
 - Socket: UDP local (e.g., 127.0.0.1:5005)
-- Frequency: 1 Hz (adjustable)
+- Frequency: 500ms
 - Payload Format (JSON):
 ```json
 {
@@ -43,16 +43,13 @@ SkyBridge is a real-time flight simulator mod for MSFS 2020 that bridges in-game
 ### Technology Stack
 - **Language**: Python 3
 - **Framework**: Flask (lightweight, zero-config)
+- **Mod**: C# + SimConnectSDK (MSFS 2020)
 - **Real-time**: Flask-SocketIO (WebSocket)
-- **Image Processing**: Pillow (PNG encode/decode)
-- **Optional**: qrcode (QR code generation)
 
 ### Python Dependencies
 ```
 flask
 flask-socketio
-pillow
-qrcode
 python-socketio
 ```
 
@@ -92,23 +89,7 @@ python-socketio
 4. JavaScript calls `GET /decode/<code>`
 5. Client redirected to `http://192.168.X.X:PORT` (dashboard)
 
-### Implementation Options
-
-**Option A: Direct Redirection** (Recommended)
-- Simpler implementation
-- Always works (HTTP on LAN)
-- Pro: Clean, no browser limitations
-- Con: Leaves portal page
-
-**Option B: Iframe Embedding**
-- Keeps portal visible
-- Con: HTTPS/HTTP mixed content issues
-- Con: Some mobile browsers block HTTP iframes from HTTPS
-
-**Recommendation**: Use direct redirection for LAN-only access.
-
 ### Key Features
-- QR code display for easy sharing
 - Code validation (9 chars, alphanumeric)
 - Mobile-responsive design
 - Offline-first if needed (service worker)
@@ -119,8 +100,8 @@ python-socketio
 
 | Layer | Component | Technology |
 |-------|-----------|------------|
-| **Mod** | Flight data capture | C# (MSFS) / C++ (X-Plane) / Lua (DCS) |
-| **Network** | Data transmission | UDP JSON |
+| **Mod** | Flight data capture | C# (MSFS) |
+| **Network** | Data transmission | UDP + JSON + WebSocket |
 | **Server** | HTTP API | Flask + SocketIO |
 | **Telemetry** | Data encoding | Custom base62 (9 chars) |
 | **Frontend** | Dashboard | HTML/CSS/JS + WebSocket |
@@ -131,11 +112,11 @@ python-socketio
 ## Development Priorities
 1. ✅ Base62 encoding
 2. ✅ Python server scaffold (Flask setup)
-3. UDP listener implementation
-4. API endpoints (data, screenshot, code)
-5. Dashboard frontend
+3. ✅ UDP listener implementation
+4. ✅ API endpoints (data, screenshot, code)
+5. ✅ Dashboard frontend
 6. ✅ Portal
-7. Multi-simulator support expansion
+7. ✅ Use WebSocket
 
 ---
 
