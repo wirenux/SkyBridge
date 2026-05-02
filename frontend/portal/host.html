@@ -46,7 +46,7 @@
 
             async function getAndEncode() {
                 const port =
-                    parseInt(document.getElementById("port").value) || 5001;
+                    parseInt(document.getElementById("port").value) || 5000;
                 if (port < 1 || port > 65535) {
                     showError("Port must be between 1 and 65535");
                     return;

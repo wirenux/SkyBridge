@@ -7,8 +7,8 @@
             rel="stylesheet"
             href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
         />
-        <link rel="stylesheet" href="/assets/css/common.css" />
         <link rel="stylesheet" href="/assets/css/dashboard.css" />
+        <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
         <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
         <title>SkyBridge · Dashboard</title>
     </head>
@@ -30,6 +30,21 @@
                     <button id="follow-btn" onclick="toggleFollow()">
                         📍 Following
                     </button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Attitude</div>
+                <div class="adi-instrument">
+                    <canvas id="adi-canvas"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Heading</div>
+                <div class="hdg-instrument">
+                    <canvas id="hdg-tape"></canvas>
+                    <div class="hdg-readout" id="hdg-readout">000°</div>
                 </div>
             </div>
 
@@ -96,6 +111,10 @@
             <div class="card">
                 <div class="card-title">Systems</div>
                 <div class="data-row">
+                    <span class="data-label">Gear</span>
+                    <span class="ap-badge" id="gear-status">-</span>
+                </div>
+                <div class="data-row">
                     <span class="data-label">FLAPS</span>
                     <span class="data-value" id="flaps">—</span>
                 </div>
@@ -134,6 +153,269 @@
             let _map = null;
             let _marker = null;
             let _follow = true;
+
+            const HDG_CANVAS = document.getElementById("hdg-tape");
+            const HDG_CTX = HDG_CANVAS.getContext("2d");
+            const DEG_PER_PX = 6;
+
+            let _hdgCurrent = 0;
+            let _hdgTarget = 0;
+            let _hdgAnimId = null;
+
+            const ADI_CANVAS = document.getElementById("adi-canvas");
+            const ADI_CTX = ADI_CANVAS.getContext("2d");
+            const ADI_SIZE = 220; // diamètre en px
+
+            let _pitchCurrent = 0;
+            let _bankCurrent = 0;
+            let _pitchTarget = 0;
+            let _bankTarget = 0;
+            let _adiAnimId = null;
+
+            function drawADI(pitch, bank) {
+                const canvas = ADI_CANVAS;
+                const size = ADI_SIZE;
+                canvas.width = size;
+                canvas.height = size;
+
+                const ctx = ADI_CTX;
+                const cx = size / 2;
+                const cy = size / 2;
+                const r = size / 2 - 2;
+
+                // Clip circulaire
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(cx, cy, r, 0, Math.PI * 2);
+                ctx.clip();
+
+                // Rotation bank
+                ctx.translate(cx, cy);
+                ctx.rotate((bank * Math.PI) / 180);
+                ctx.translate(-cx, -cy);
+
+                // Horizon offset selon pitch (1° = 3px)
+                const pitchOffset = -pitch * 3;
+
+                // Ciel (bleu)
+                ctx.fillStyle = "#1a4a8a";
+                ctx.fillRect(0, 0, size, cy + pitchOffset);
+
+                // Sol (marron)
+                ctx.fillStyle = "#6b3a1f";
+                ctx.fillRect(0, cy + pitchOffset, size, size);
+
+                // Ligne d'horizon
+                ctx.strokeStyle = "#ffffff";
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(0, cy + pitchOffset);
+                ctx.lineTo(size, cy + pitchOffset);
+                ctx.stroke();
+
+                // Graduations pitch (toutes les 5°)
+                ctx.font = "10px monospace";
+                ctx.fillStyle = "#ffffff";
+                ctx.textAlign = "center";
+                for (let p = -30; p <= 30; p += 5) {
+                    if (p === 0) continue;
+                    const y = cy + pitchOffset - p * 3;
+                    const len = p % 10 === 0 ? 30 : 18;
+                    ctx.strokeStyle = "#ffffff";
+                    ctx.lineWidth = 1;
+                    ctx.globalAlpha = 0.6;
+                    ctx.beginPath();
+                    ctx.moveTo(cx - len, y);
+                    ctx.lineTo(cx + len, y);
+                    ctx.stroke();
+                    if (p % 10 === 0) {
+                        ctx.globalAlpha = 0.8;
+                        ctx.fillText(Math.abs(p), cx + len + 10, y + 4);
+                        ctx.fillText(Math.abs(p), cx - len - 10, y + 4);
+                    }
+                }
+
+                ctx.globalAlpha = 1;
+                ctx.restore();
+
+                // ── Overlay fixe (ne tourne pas) ──────────────────────────────
+
+                // Cercle extérieur
+                ctx.strokeStyle = "#2a3a4a";
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(cx, cy, r, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // Indicateur d'inclinaison (arc bank en haut)
+                const bankAngles = [
+                    -60, -45, -30, -20, -10, 0, 10, 20, 30, 45, 60,
+                ];
+                bankAngles.forEach((angle) => {
+                    const rad = ((angle - 90) * Math.PI) / 180;
+                    const inner = r - (angle % 30 === 0 ? 14 : 8);
+                    ctx.strokeStyle = "#aaaaaa";
+                    ctx.lineWidth = angle % 30 === 0 ? 2 : 1;
+                    ctx.beginPath();
+                    ctx.moveTo(
+                        cx + Math.cos(rad) * inner,
+                        cy + Math.sin(rad) * inner,
+                    );
+                    ctx.lineTo(cx + Math.cos(rad) * r, cy + Math.sin(rad) * r);
+                    ctx.stroke();
+                });
+
+                // Triangle bank (tourne avec le bank)
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.rotate((bank * Math.PI) / 180);
+                ctx.fillStyle = "#ffffff";
+                ctx.strokeStyle = "#ffffff";
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(0, -r + 2);
+                ctx.lineTo(-6, -r + 14);
+                ctx.lineTo(6, -r + 14);
+                ctx.closePath();
+                ctx.fill();
+                ctx.restore();
+
+                // Avion fixe central (symbole mini-avion)
+                ctx.strokeStyle = "#ffdd00";
+                ctx.lineWidth = 3;
+                ctx.lineCap = "round";
+
+                // Aile gauche
+                ctx.beginPath();
+                ctx.moveTo(cx - 40, cy);
+                ctx.lineTo(cx - 10, cy);
+                ctx.stroke();
+
+                // Aile droite
+                ctx.beginPath();
+                ctx.moveTo(cx + 10, cy);
+                ctx.lineTo(cx + 40, cy);
+                ctx.stroke();
+
+                // Fuselage court
+                ctx.beginPath();
+                ctx.moveTo(cx - 10, cy);
+                ctx.lineTo(cx + 10, cy);
+                ctx.stroke();
+
+                // Point central
+                ctx.fillStyle = "#ffdd00";
+                ctx.beginPath();
+                ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Ligne de référence centre gauche/droite
+                ctx.strokeStyle = "rgba(255,255,255,0.3)";
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(cx - r, cy);
+                ctx.lineTo(cx - r + 16, cy);
+                ctx.moveTo(cx + r - 16, cy);
+                ctx.lineTo(cx + r, cy);
+                ctx.stroke();
+            }
+
+            function animateADI() {
+                const dp = _pitchTarget - _pitchCurrent;
+                const db = shortAngleDiff(_bankCurrent, _bankTarget);
+
+                if (Math.abs(dp) < 0.05 && Math.abs(db) < 0.05) {
+                    _pitchCurrent = _pitchTarget;
+                    _bankCurrent = _bankTarget;
+                    _adiAnimId = null;
+                    drawADI(_pitchCurrent, _bankCurrent);
+                    return;
+                }
+
+                _pitchCurrent += dp * 0.12;
+                _bankCurrent += db * 0.12;
+                _bankCurrent = ((_bankCurrent % 360) + 360) % 360;
+
+                drawADI(_pitchCurrent, _bankCurrent);
+                _adiAnimId = requestAnimationFrame(animateADI);
+            }
+
+            function shortAngleDiff(from, to) {
+                // Retourne le chemin le plus court entre deux angles (-180 à +180)
+                let diff = ((((to - from) % 360) + 540) % 360) - 180;
+                return diff;
+            }
+
+            function animateHdg() {
+                const diff = shortAngleDiff(_hdgCurrent, _hdgTarget);
+
+                if (Math.abs(diff) < 0.1) {
+                    _hdgCurrent = _hdgTarget;
+                    _hdgAnimId = null;
+                    drawHdgTape(_hdgCurrent);
+                    return;
+                }
+
+                _hdgCurrent += diff * 0.12; // 0.12 = vitesse d'interpolation, ajuste entre 0.05 (lent) et 0.3 (rapide)
+                _hdgCurrent = ((_hdgCurrent % 360) + 360) % 360;
+
+                drawHdgTape(_hdgCurrent);
+                _hdgAnimId = requestAnimationFrame(animateHdg);
+            }
+
+            function drawHdgTape(hdg) {
+                const W = HDG_CANVAS.clientWidth || 350;
+                const H = 50;
+                HDG_CANVAS.width = W;
+                HDG_CANVAS.height = H;
+
+                const ctx = HDG_CTX;
+                const cx = W / 2;
+
+                ctx.fillStyle = "#070a0e";
+                ctx.fillRect(0, 0, W, H);
+
+                for (let d = -90; d <= 90; d++) {
+                    const deg = (((Math.round(hdg) + d) % 360) + 360) % 360;
+                    const x = cx + d * DEG_PER_PX;
+                    const isMaj = deg % 10 === 0;
+                    const isMed = deg % 5 === 0;
+
+                    if (!isMed && !isMaj) continue;
+                    if (x < 0 || x > W) continue;
+
+                    ctx.strokeStyle = isMaj ? "#4a5a6a" : "#2a3540";
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(x, H);
+                    ctx.lineTo(x, isMaj ? H - 20 : H - 12);
+                    ctx.stroke();
+
+                    if (isMaj) {
+                        ctx.fillStyle = deg % 30 === 0 ? "#e8edf3" : "#4a5a6a";
+                        ctx.font = "11px monospace";
+                        ctx.textAlign = "center";
+                        ctx.fillText(String(deg).padStart(3, "0"), x, H - 24);
+                    }
+                }
+
+                // Curseur cyan
+                ctx.strokeStyle = "rgba(0,212,255,0.6)";
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(cx, 0);
+                ctx.lineTo(cx, H);
+                ctx.stroke();
+
+                // Triangle
+                ctx.fillStyle = "rgba(0,212,255,0.9)";
+                ctx.beginPath();
+                ctx.moveTo(cx - 6, 0);
+                ctx.lineTo(cx + 6, 0);
+                ctx.lineTo(cx, 10);
+                ctx.closePath();
+                ctx.fill();
+            }
 
             function initMap(lat, lon) {
                 _map = L.map("map", { zoomControl: true }).setView(
@@ -190,6 +472,17 @@
                     _marker.setLatLng([data.lat, data.lon]);
                     if (_follow) _map.setView([data.lat, data.lon]);
                 }
+
+                // Heading tape
+                _hdgTarget = parseFloat(data.hdg) || 0;
+                if (!_hdgAnimId) _hdgAnimId = requestAnimationFrame(animateHdg);
+                document.getElementById("hdg-readout").textContent =
+                    `${String(Math.round(_hdgTarget)).padStart(3, "0")}°`;
+
+                // ADI
+                _pitchTarget = parseFloat(data.pitch) || 0;
+                _bankTarget = parseFloat(data.bank) || 0;
+                if (!_adiAnimId) _adiAnimId = requestAnimationFrame(animateADI);
 
                 // Altitude
                 const isAGL = data.alt_agl < 1000;
@@ -260,6 +553,19 @@
                 }
 
                 // Systems
+                const gearPercent = data.gear !== undefined ? data.gear : 0;
+                const gearBadge = document.getElementById("gear-status");
+                if (gearPercent == 0) {
+                    gearBadge.textContent = "UP";
+                    gearBadge.className = "ap-badge on";
+                } else if (gearPercent == 1) {
+                    gearBadge.textContent = "DOWN";
+                    gearBadge.className = "ap-badge";
+                } else if (gearPercent < 0.99 && gearPercent > 0.01) {
+                    gearBadge.textContent = `${Math.round(gearPercent * 100)}%`;
+                    gearBadge.className = "ap-badge warning";
+                }
+
                 document.getElementById("flaps").innerHTML =
                     `${fmt(data.flaps_index, 0)} <span class="unit">notch</span> · ${fmt(data.flaps_deg, 1, "°")}`;
                 document.getElementById("fuel").innerHTML = fmt(
@@ -283,55 +589,44 @@
 
                 const apDiv = document.getElementById("ap-details");
                 apDiv.innerHTML = "";
-                if (apOn) {
-                    const rows = [
-                        [
-                            "ALT",
-                            ap.alt_on
-                                ? `${parseFloat(ap.alt_val).toFixed(0)} <span class="unit">ft</span>`
-                                : "—",
-                        ],
-                        [
-                            "IAS",
-                            ap.ias_on
-                                ? `${parseFloat(ap.ias_val).toFixed(0)} <span class="unit">kt</span>`
-                                : "—",
-                        ],
-                        [
-                            "HDG",
-                            ap.hdg_on
-                                ? `${parseFloat(ap.hdg_val).toFixed(0)}<span class="unit">°</span>`
-                                : "—",
-                        ],
-                    ];
-                    rows.forEach(([label, val]) => {
-                        apDiv.innerHTML += `
-                            <div class="data-row">
-                                <span class="data-label">${label}</span>
-                                <span class="data-value ${val === "—" ? "" : "ok"}">${val}</span>
-                            </div>`;
-                    });
-                }
+
+                const rows = [
+                    [
+                        "ALT",
+                        ap && ap.alt_on
+                            ? `${parseFloat(ap.alt_val).toFixed(0)} <span class="unit">ft</span>`
+                            : "—",
+                        ap && ap.alt_on ? "ok" : "",
+                    ],
+                    [
+                        "IAS",
+                        ap && ap.ias_on
+                            ? `${parseFloat(ap.ias_val).toFixed(0)} <span class="unit">kt</span>`
+                            : "—",
+                        ap && ap.ias_on ? "ok" : "",
+                    ],
+                    [
+                        "HDG",
+                        ap && ap.hdg_on
+                            ? `${parseFloat(ap.hdg_val).toFixed(0)}<span class="unit">°</span>`
+                            : "—",
+                        ap && ap.hdg_on ? "ok" : "",
+                    ],
+                ];
+                rows.forEach(([label, val, status]) => {
+                    apDiv.innerHTML += `
+                        <div class="data-row">
+                            <span class="data-label">${label}</span>
+                            <span class="data-value ${status}">${val}</span>
+                        </div>`;
+                });
             }
 
-            async function poll() {
-                try {
-                    const res = await fetch(API_URL);
-                    const data = await res.json();
-                    if (Object.keys(data).length > 0) {
-                        update(data);
-                    } else {
-                        setLive(false);
-                        document.getElementById("status").textContent =
-                            "Waiting for sim...";
-                    }
-                } catch (e) {
-                    setLive(false);
-                }
-            }
+            const socket = io();
 
-            poll();
-            setInterval(poll, REFRESH_MS);
+            socket.on("connect", () => setLive(true));
+            socket.on("disconnect", () => setLive(false));
+            socket.on("flight_data", (data) => update(data));
         </script>
     </body>
 </html>
