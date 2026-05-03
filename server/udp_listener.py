@@ -7,7 +7,7 @@ PORT = 5005
 
 latest_data: dict = {}
 data_lock = threading.Lock()
-_socketio = None  # injecté depuis main.py
+_socketio = None
 
 
 def init(sio):
@@ -28,7 +28,6 @@ def start(port: int = PORT):
                 latest_data.update(parsed)
             if _socketio:
                 _socketio.emit("flight_data", parsed)
-            # print(parsed.get("motors"))
         except Exception as e:
             print(f"[UDP] Error: {e}")
 

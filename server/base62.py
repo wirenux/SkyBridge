@@ -14,7 +14,9 @@ def encode(ip: str, port: int):
         chars.append(ALPHABET[n % BASE])
         n //= BASE
 
-    return "".join(chars)  # ['i', 'k', 'X', '3', 'a', 'P'] -> "ikX3aP"
+    return "".join(
+        chars
+    )  # ['i', 'k', 'X', '3', 'a', 'P', 'm', 'n', 'o'] -> "ikX3aPmno"
 
 
 def decode(code: str) -> tuple[str, int]:

@@ -24,7 +24,7 @@ while (true)
 
             sim.OnRecvOpen += (s, d) =>
             {
-                Console.WriteLine($"[OK] Connecté à : {d.szApplicationName}");
+                Console.WriteLine($"[OK] Connect to : {d.szApplicationName}");
 
                 void Add(string var, string unit) =>
                     sim.AddToDataDefinition(DEFINE_ID.FlightData, var, unit,
@@ -76,10 +76,10 @@ while (true)
                 Add("ATTITUDE INDICATOR PITCH DEGREES", "degrees");
                 Add("ATTITUDE INDICATOR BANK DEGREES", "degrees");
                 Add("ENGINE TYPE", "number");
-                Add("AMBIENT TEMPERATURE", "celsius");   // temp extérieure
-                Add("ELEVATOR TRIM PCT", "percent");   // trim en %
-                Add("SPOILERS HANDLE POSITION", "percent");   // spoilers 0-100%
-                Add("SPOILERS ARMED", "bool");      // spoilers armés
+                Add("AMBIENT TEMPERATURE", "celsius");
+                Add("ELEVATOR TRIM PCT", "percent");
+                Add("SPOILERS HANDLE POSITION", "percent");
+                Add("SPOILERS ARMED", "bool");
 
                 sim.RegisterDataDefineStruct<FlightData>(DEFINE_ID.FlightData);
                 sim.RequestDataOnSimObject(REQUEST_ID.FlightData, DEFINE_ID.FlightData,
@@ -89,19 +89,19 @@ while (true)
                     0, 1, 0);
             };
 
-            sim.OnRecvQuit += (s, d) => { Console.WriteLine("[!] MSFS fermé."); connected = false; };
+            sim.OnRecvQuit += (s, d) => { Console.WriteLine("[!] MSFS closed."); connected = false; };
             sim.OnRecvException += (s, d) => Console.WriteLine($"[ERR] {d.dwException}");
 
             sim.OnRecvSimobjectData += (s, d) =>
             {
                 var f = (FlightData)d.dwData[0];
 
-                // ── Altitude ────────────────────────────────────────────────
+                // Altitude
                 string altStr = f.AGL < 1000
                     ? $"{f.AGL:F0} ft AGL"
                     : $"{f.ALT:F0} ft MSL";
 
-                // ── Engine ──────────────────────────────────────────────────
+                // Engine
                 int engCount = (int)f.EngineCount;
                 bool isJet = f.EngineType == 1 || f.EngineType == 5;
 
@@ -123,45 +123,11 @@ while (true)
                     }
                 }
 
-                // ── Autopilot ───────────────────────────────────────────────
+                // Autopilot
                 bool apOn = f.AP > 0.5;
-                // string apAlt = f.APAltOn > 0.5 ? $"ALT {f.APAlt:F0} ft" : "ALT ---";
-                // string apIas = f.APIasOn > 0.5 ? $"IAS {f.APIas:F0} kt" : "IAS ---";
-                // string apHdg = f.APHdgOn > 0.5 ? $"HDG {f.APHdg:F0}°" : "HDG ---";
 
-                // ── DEBUG ───────────────────────────────────────────────────
-                // Console.Clear();
-                // Console.WriteLine("╔══════════════════════════════════╗");
-                // Console.WriteLine("║      SkyBridge · Live Data       ║");
-                // Console.WriteLine("╠══════════════════════════════════╣");
-                // Console.WriteLine($"║  ALT     : {altStr,-23}║");
-                // Console.WriteLine($"║  HDG     : {f.HDG:F1}°{"",-22}║");
-                // Console.Write(engLines.ToString().TrimEnd('\n'));
-                // Console.WriteLine();
-                // Console.WriteLine($"║  FLAPS   : {f.FlapsIndex:F0} ({f.FlapsDeg:F1}°){"",-14}║");
-                // Console.WriteLine("╠══════════════════════════════════╣");
-                // Console.WriteLine($"║  GS      : {f.GS:F1} kt{"",-20}║");
-                // Console.WriteLine($"║  IAS     : {f.IAS:F1} kt{"",-20}║");
-                // Console.WriteLine($"║  TAS     : {f.TAS:F1} kt{"",-20}║");
-                // Console.WriteLine($"║  MACH    : {f.Mach:F3}{"",-22}║");
-                // Console.WriteLine("╠══════════════════════════════════╣");
-                // Console.WriteLine($"║  VS      : {f.VS:F0} fpm{"",-19}║");
-                // Console.WriteLine($"║  LAT     : {f.Lat:F6}{"",-22}║");
-                // Console.WriteLine($"║  LON     : {f.Lon:F6}{"",-22}║");
-                // Console.WriteLine($"║  FUEL    : {f.Fuel:F1} lbs{"",-19}║");
-                // Console.WriteLine($"║  AOA     : {f.AOA:F2}°{"",-22}║");
-                // Console.WriteLine($"║  G       : {f.G:F2} g{"",-22}║");
-                // Console.WriteLine("╠══════════════════════════════════╣");
-                // Console.WriteLine($"║  AP      : {(apOn ? "ON " : "OFF"),-23}║");
-                // if (apOn)
-                // {
-                //     Console.WriteLine($"║    {apAlt,-30}║");
-                //     Console.WriteLine($"║    {apIas,-30}║");
-                //     Console.WriteLine($"║    {apHdg,-30}║");
-                // }
-                // Console.WriteLine("╚══════════════════════════════════╝");
 
-                // ── UDP payload ─────────────────────────────────────────────
+                // UDP payload
                 var payload = new
                 {
                     alt = f.AGL < 1000 ? f.AGL : f.ALT,
@@ -216,8 +182,7 @@ while (true)
         }
         catch
         {
-            Console.WriteLine("[...] MSFS non détecté, retry dans 5s");
-            // Thread.Sleep(5000);
+            Console.WriteLine("[...] MSFS not connected, retry in 5s");
             continue;
         }
     }
@@ -234,37 +199,37 @@ enum REQUEST_ID { FlightData }
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 struct FlightData
 {
-    public double ALT;           // PLANE ALTITUDE
-    public double AGL;           // PLANE ALT ABOVE GROUND
-    public double HDG;           // PLANE HEADING DEGREES MAGNETIC
-    public double EngineCount;   // NUMBER OF ENGINES
+    public double ALT;              // PLANE ALTITUDE
+    public double AGL;              // PLANE ALT ABOVE GROUND
+    public double HDG;              // PLANE HEADING DEGREES MAGNETIC
+    public double EngineCount;      // NUMBER OF ENGINES
     public double RPM1, RPM2, RPM3, RPM4, RPM5, RPM6, RPM7, RPM8;
     public double N1_1, N1_2, N1_3, N1_4, N1_5, N1_6, N1_7, N1_8;
-    public double RotorRPM;      // ROTOR RPM:1
-    public double GS;            // GPS GROUND SPEED
-    public double IAS;           // AIRSPEED INDICATED
-    public double TAS;           // AIRSPEED TRUE
-    public double Mach;          // AIRSPEED MACH
-    public double GearPercent;   // GEAR TOTAL PCT EXTENDED  ← ici, pas après Mach dans l'ancienne
-    public double VS;            // VERTICAL SPEED
-    public double Lat;           // PLANE LATITUDE
-    public double Lon;           // PLANE LONGITUDE
-    public double Fuel;          // FUEL TOTAL QUANTITY WEIGHT
-    public double AOA;           // INCIDENCE ALPHA
-    public double G;             // G FORCE
-    public double AP;            // AUTOPILOT MASTER
-    public double APAlt1;    // AUTOPILOT ALTITUDE LOCK VAR:1
-    public double APAlt2;    // AUTOPILOT ALTITUDE LOCK VAR:2
-    public double APAlt3;    // AUTOPILOT ALTITUDE LOCK VAR:3
-    public double APIas;         // AUTOPILOT AIRSPEED HOLD VAR
-    public double APHdg;         // AUTOPILOT HEADING LOCK DIR
-    public double FlapsIndex;    // FLAPS HANDLE INDEX
-    public double FlapsDeg;      // TRAILING EDGE FLAPS LEFT ANGLE
-    public double Pitch;  // ATTITUDE INDICATOR PITCH DEGREES
-    public double Bank;   // ATTITUDE INDICATOR BANK DEGREES
-    public double EngineType;  // ENGINE
-    public double OAT;           // AMBIENT TEMPERATURE
-    public double TrimPct;       // ELEVATOR TRIM PCT
-    public double SpoilerPct;    // SPOILERS HANDLE POSITION
-    public double SpoilerArmed;  // SPOILERS ARMED
+    public double RotorRPM;         // ROTOR RPM:1
+    public double GS;               // GPS GROUND SPEED
+    public double IAS;              // AIRSPEED INDICATED
+    public double TAS;              // AIRSPEED TRUE
+    public double Mach;             // AIRSPEED MACH
+    public double GearPercent;      // GEAR TOTAL PCT EXTENDED
+    public double VS;               // VERTICAL SPEED
+    public double Lat;              // PLANE LATITUDE
+    public double Lon;              // PLANE LONGITUDE
+    public double Fuel;             // FUEL TOTAL QUANTITY WEIGHT
+    public double AOA;              // INCIDENCE ALPHA
+    public double G;                // G FORCE
+    public double AP;               // AUTOPILOT MASTER
+    public double APAlt1;           // AUTOPILOT ALTITUDE LOCK VAR:1
+    public double APAlt2;           // AUTOPILOT ALTITUDE LOCK VAR:2
+    public double APAlt3;           // AUTOPILOT ALTITUDE LOCK VAR:3
+    public double APIas;            // AUTOPILOT AIRSPEED HOLD VAR
+    public double APHdg;            // AUTOPILOT HEADING LOCK DIR
+    public double FlapsIndex;       // FLAPS HANDLE INDEX
+    public double FlapsDeg;         // TRAILING EDGE FLAPS LEFT ANGLE
+    public double Pitch;            // ATTITUDE INDICATOR PITCH DEGREES
+    public double Bank;             // ATTITUDE INDICATOR BANK DEGREES
+    public double EngineType;       // ENGINE
+    public double OAT;              // AMBIENT TEMPERATURE
+    public double TrimPct;          // ELEVATOR TRIM PCT
+    public double SpoilerPct;       // SPOILERS HANDLE POSITION
+    public double SpoilerArmed;     // SPOILERS ARMED
 }
