@@ -31,8 +31,3 @@ def decode(code: str) -> tuple[str, int]:
     octet1 = (n >> 40) & 0xFF
     ip = f"{octet1}.{octet2}.{octet3}.{octet4}"
     return ip, port
-
-
-code = encode("192.168.1.210", 5005)
-print(code)
-print(decode(code))

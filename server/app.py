@@ -6,21 +6,14 @@ import udp_listener
 from base62 import decode, encode
 from flask import Flask, jsonify, render_template, request
 from flask_socketio import SocketIO
-from jinja2 import Environment, FileSystemLoader
+from jinja2 import FileSystemLoader
 
 if getattr(sys, "frozen", False):
-    BASE_DIR = sys._MEIPASS
+    BASE_DIR = sys._MEIPASS  # pyright: ignore[reportAttributeAccessIssue]
 else:
     BASE_DIR = os.path.normpath(
         os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
     )
-
-print(f"BASE_DIR = {BASE_DIR}")
-print(f"template_folder = {os.path.join(BASE_DIR, 'frontend')}")
-print(
-    f"exists = {os.path.exists(os.path.join(BASE_DIR, 'frontend', 'dashboard', 'index.html'))}"
-)
-
 
 app = Flask(
     __name__,
@@ -28,7 +21,7 @@ app = Flask(
     static_url_path="/assets",
 )
 
-app.jinja_loader = FileSystemLoader(os.path.join(BASE_DIR, "frontend"))
+app.jinja_loader = FileSystemLoader(os.path.join(BASE_DIR, "frontend"))  # pyright: ignore[reportAttributeAccessIssue]
 
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
 
