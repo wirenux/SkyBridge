@@ -51,6 +51,14 @@ MSFS 2020
 
 ## Getting Started
 
+### Installation (recommended)
+
+Download `SkyBridge_Setup.exe` from the [releases page](https://github.com/wirenux/SkyBridge/releases) and run it. The installer includes both the mod and the server.
+
+---
+
+## Manual Setup
+
 ### Prerequisites (If you want to build from source)
 
 **On the Windows PC running MSFS 2020:**
@@ -61,26 +69,16 @@ MSFS 2020
 **On any machine for the server (can be the same PC or a Mac/Linux on the same network):**
 - Python 3.9+
 
----
-
-### Installation (recommended)
-
-Download `SkyBridge_Setup.exe` from the [releases page](https://github.com/wirenux/SkyBridge/releases) and run it. The installer includes both the mod and the server.
-
----
-
-### Manual Setup
-
-#### 1. Install server dependencies
+### 1. Install server dependencies
 
 ```bash
 cd server
 pip install -r requirements.txt
 ```
 
-#### (Optional) 2. Configure the UDP target
+### (Optional) 2. Configure the UDP target
 
-##### If the server runs on the same PC as MSFS, keep `127.0.0.1` and don't modify anything !.
+#### If the server runs on the same PC as MSFS, keep `127.0.0.1` and don't modify anything !.
 
 In `mod/src/Program.cs`, set the IP of the machine running the server:
 
@@ -89,7 +87,7 @@ var udpEndpoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 5005);
 ```
 
 
-#### 3. Build mod + server
+### 3. Build mod + server
 
 ```powershell
 .\build.ps1
