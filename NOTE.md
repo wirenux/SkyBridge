@@ -7,10 +7,16 @@ Mobile -> skybridge.test (skybridge is host 24/7 on external server (just the po
 Enter code -> click go
 Redirect to LOCAL-IP:PORT/dashboard
 
+✅ CLEAR All PYTHON log & print code in big ascii
+
 ✅ USE Web Socket Instead of GET call
 
 If no change on udp say disconnected (e.g, in serv reboot)
-fix: map z-level
+✅ fix: map z-level
+
+Map:
+
+✅ Show Airport with a pictogramme 
 
 Data to get:
 
@@ -21,7 +27,7 @@ Data to get:
 ✅ VS
 ✅ LAT
 ✅ LON
-✅ FUEL GAL / ✅ gal // %
+✅ FUEL GAL / ✅ gal // % (bar)
 ✅ AOA
 ✅ G
 ✅ FLAPS
@@ -30,12 +36,10 @@ Data to get:
 ❓ Plane Side image
 ✅ Nav Ball
 ✅ Heading
-TEMP ºC
-TRIM
+✅ TEMP ºC
+✅ TRIM
 ✅ GEAR
-SPOILER
-
-After Burner ON/OFF Status next to engine %
+✅ SPOILER
 
 Auto Pilot data to get:
 
