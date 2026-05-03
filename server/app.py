@@ -1,18 +1,36 @@
+import os
 import socket
+import sys
 
 import udp_listener
 from base62 import decode, encode
 from flask import Flask, jsonify, render_template, request
 from flask_socketio import SocketIO
+from jinja2 import Environment, FileSystemLoader
+
+if getattr(sys, "frozen", False):
+    BASE_DIR = sys._MEIPASS
+else:
+    BASE_DIR = os.path.normpath(
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
+    )
+
+print(f"BASE_DIR = {BASE_DIR}")
+print(f"template_folder = {os.path.join(BASE_DIR, 'frontend')}")
+print(
+    f"exists = {os.path.exists(os.path.join(BASE_DIR, 'frontend', 'dashboard', 'index.html'))}"
+)
+
 
 app = Flask(
     __name__,
-    template_folder="../frontend/",
-    static_folder="../frontend/assets",
+    static_folder=os.path.join(BASE_DIR, "frontend", "assets"),
     static_url_path="/assets",
 )
 
-socketio = SocketIO(app, cors_allowed_origins="*")
+app.jinja_loader = FileSystemLoader(os.path.join(BASE_DIR, "frontend"))
+
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
 
 
 def get_local_ip():

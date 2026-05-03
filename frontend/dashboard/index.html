@@ -145,6 +145,18 @@
                     <span class="data-value" id="flaps">—</span>
                 </div>
                 <div class="data-row">
+                    <span class="data-label">OAT</span>
+                    <span class="data-value" id="oat">—</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">TRIM</span>
+                    <span class="data-value" id="trim">—</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">SPLR</span>
+                    <span class="data-value" id="spoiler">—</span>
+                </div>
+                <div class="data-row">
                     <span class="data-label">FUEL</span>
                     <span class="data-value" id="fuel">—</span>
                 </div>
@@ -477,6 +489,79 @@
                     _follow = false;
                     updateFollowBtn();
                 });
+                _map.on("moveend", () => fetchAirports());
+                _map.on("zoomend", () => fetchAirports());
+            }
+
+            let _airportLayer = null;
+            let _lastAirportFetch = 0;
+
+            async function fetchAirports(lat, lon) {
+                _airportLayer = L.layerGroup().addTo(_map);
+                if (_map.getZoom() < 6) {
+                    _airportLayer.clearLayers();
+                    return;
+                }
+
+                if (Date.now() - _lastAirportFetch < 5000) return;
+                _lastAirportFetch = Date.now();
+
+                const bounds = _map.getBounds();
+                const s = bounds.getSouth().toFixed(4);
+                const w = bounds.getWest().toFixed(4);
+                const n = bounds.getNorth().toFixed(4);
+                const e = bounds.getEast().toFixed(4);
+
+                const query = `
+                    [out:json][timeout:10];
+                    (
+                        node["aeroway"="aerodrome"](${s},${w},${n},${e});
+                        // node["aeroway"="helipad"](${s},${w},${n},${e});
+                        way["aeroway"="aerodrome"](${s},${w},${n},${e});
+                        relation["aeroway"="aerodrome"](${s},${w},${n},${e});
+                    );
+                    out center tags;
+                `;
+
+                try {
+                    const res = await fetch(
+                        "https://overpass-api.de/api/interpreter",
+                        {
+                            method: "POST",
+                            body: query,
+                        },
+                    );
+                    const data = await res.json();
+
+                    _airportLayer.clearLayers();
+
+                    data.elements.forEach((el) => {
+                        const lat = el.lat ?? el.center?.lat;
+                        const lon = el.lon ?? el.center?.lon;
+                        const name = el.tags?.name ?? el.tags?.ref ?? "Airport";
+                        const icao = el.tags?.icao ?? "";
+                        const type = el.tags?.aeroway;
+
+                        if (!lat || !lon) return;
+
+                        const icon = L.divIcon({
+                            className: "",
+                            html:
+                                type === "helipad"
+                                    ? ``
+                                    : `<div class="apt-marker">${icao || "✈"}</div>`,
+                            iconAnchor: [null, null],
+                        });
+
+                        L.marker([lat, lon], { icon })
+                            .bindPopup(
+                                `<b>${name}</b>${icao ? `<br>ICAO: ${icao}` : ""}`,
+                            )
+                            .addTo(_airportLayer);
+                    });
+                } catch (e) {
+                    console.warn("Airport fetch failed:", e);
+                }
             }
 
             function toggleFollow() {
@@ -527,6 +612,33 @@
                 _pitchTarget = parseFloat(data.pitch) || 0;
                 _bankTarget = parseFloat(data.bank) || 0;
                 if (!_adiAnimId) _adiAnimId = requestAnimationFrame(animateADI);
+
+                // Systems
+                document.getElementById("oat").innerHTML = fmt(
+                    data.oat,
+                    1,
+                    "°C",
+                );
+
+                document.getElementById("trim").innerHTML = fmt(
+                    data.trim_pct,
+                    1,
+                    "%",
+                );
+
+                const splrArmed = data.spoiler_armed;
+                const splrPct = parseFloat(data.spoiler_pct) || 0;
+                const splrEl = document.getElementById("spoiler");
+                if (splrPct > 1) {
+                    splrEl.innerHTML = fmt(data.spoiler_pct, 0, "%");
+                    splrEl.className = "data-value warn";
+                } else if (splrArmed) {
+                    splrEl.textContent = "ARMED";
+                    splrEl.className = "data-value warn";
+                } else {
+                    splrEl.textContent = "OFF";
+                    splrEl.className = "data-value";
+                }
 
                 // Altitude
                 const isAGL = data.alt_agl < 1000;

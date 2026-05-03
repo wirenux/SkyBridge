@@ -371,6 +371,38 @@ header h1 {
     border: 2px solid var(--border);
 }
 
+/* ── Airport markers ────────────────────────────────────────────────────────── */
+
+.apt-marker {
+    display: inline-block;
+    background: rgba(10, 12, 16, 0.85);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 9px;
+    font-weight: bold;
+    padding: 2px 5px;
+    border-radius: 3px;
+    white-space: nowrap;
+    pointer-events: auto;
+    cursor: pointer;
+    line-height: 1.4;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+}
+
+.leaflet-popup-content-wrapper {
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-family: var(--mono);
+    font-size: 12px;
+}
+
+.leaflet-popup-tip {
+    background: var(--surface);
+}
+
 /* ── Last update ────────────────────────────────────────────────────────────── */
 .footer-bar {
     text-align: center;

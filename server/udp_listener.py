@@ -28,6 +28,7 @@ def start(port: int = PORT):
                 latest_data.update(parsed)
             if _socketio:
                 _socketio.emit("flight_data", parsed)
+            # print(parsed.get("motors"))
         except Exception as e:
             print(f"[UDP] Error: {e}")
 

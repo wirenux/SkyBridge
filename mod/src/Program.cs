@@ -10,7 +10,6 @@ using Microsoft.FlightSimulator.SimConnect;
 
 SimConnect? sim = null;
 bool connected = false;
-bool isJetAircraft = false;
 
 var udpClient = new UdpClient();
 var udpEndpoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 5005);
@@ -76,6 +75,11 @@ while (true)
                 Add("TRAILING EDGE FLAPS LEFT ANGLE", "degrees");
                 Add("ATTITUDE INDICATOR PITCH DEGREES", "degrees");
                 Add("ATTITUDE INDICATOR BANK DEGREES", "degrees");
+                Add("ENGINE TYPE", "number");
+                Add("AMBIENT TEMPERATURE", "celsius");   // temp extérieure
+                Add("ELEVATOR TRIM PCT", "percent");   // trim en %
+                Add("SPOILERS HANDLE POSITION", "percent");   // spoilers 0-100%
+                Add("SPOILERS ARMED", "bool");      // spoilers armés
 
                 sim.RegisterDataDefineStruct<FlightData>(DEFINE_ID.FlightData);
                 sim.RequestDataOnSimObject(REQUEST_ID.FlightData, DEFINE_ID.FlightData,
@@ -85,7 +89,7 @@ while (true)
                     0, 1, 0);
             };
 
-            sim.OnRecvQuit += (s, d) => { Console.WriteLine("[!] MSFS fermé."); connected = false; isJetAircraft = false; };
+            sim.OnRecvQuit += (s, d) => { Console.WriteLine("[!] MSFS fermé."); connected = false; };
             sim.OnRecvException += (s, d) => Console.WriteLine($"[ERR] {d.dwException}");
 
             sim.OnRecvSimobjectData += (s, d) =>
@@ -99,11 +103,8 @@ while (true)
 
                 // ── Engine ──────────────────────────────────────────────────
                 int engCount = (int)f.EngineCount;
-                if (!isJetAircraft)
-                    isJetAircraft = f.N1_1 > 0.1 || f.N1_2 > 0.1 || f.N1_3 > 0.1 || f.N1_4 > 0.1 ||
-                                    f.N1_5 > 0.1 || f.N1_6 > 0.1 || f.N1_7 > 0.1 || f.N1_8 > 0.1;
+                bool isJet = f.EngineType == 1 || f.EngineType == 5;
 
-                bool isJet = isJetAircraft;
                 bool isRotor = f.RotorRPM > 1;
 
                 var engLines = new System.Text.StringBuilder();
@@ -173,7 +174,7 @@ while (true)
                         rpm = i switch { 1 => f.RPM1, 2 => f.RPM2, 3 => f.RPM3, 4 => f.RPM4, 5 => f.RPM5, 6 => f.RPM6, 7 => f.RPM7, _ => f.RPM8 },
                         n1 = i switch { 1 => f.N1_1, 2 => f.N1_2, 3 => f.N1_3, 4 => f.N1_4, 5 => f.N1_5, 6 => f.N1_6, 7 => f.N1_7, _ => f.N1_8 },
 
-                        is_jet = isJetAircraft,
+                        is_jet = f.EngineType == 1 || f.EngineType == 5,
                     }).ToArray(),
                     gear = f.GearPercent,
                     gs = f.GS,
@@ -190,6 +191,10 @@ while (true)
                     g = f.G,
                     pitch = f.Pitch,
                     bank = f.Bank,
+                    oat = f.OAT,
+                    trim_pct = f.TrimPct,
+                    spoiler_pct = f.SpoilerPct,
+                    spoiler_armed = f.SpoilerArmed > 0.5,
                     ap = new
                     {
                         on = f.AP > 0.5,
@@ -201,7 +206,6 @@ while (true)
                         hdg_on = f.AP > 0.5,
                     },
                     ts = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
-
                 };
                 var json = JsonSerializer.Serialize(payload);
                 var bytes = Encoding.UTF8.GetBytes(json);
@@ -258,4 +262,9 @@ struct FlightData
     public double FlapsDeg;      // TRAILING EDGE FLAPS LEFT ANGLE
     public double Pitch;  // ATTITUDE INDICATOR PITCH DEGREES
     public double Bank;   // ATTITUDE INDICATOR BANK DEGREES
+    public double EngineType;  // ENGINE
+    public double OAT;           // AMBIENT TEMPERATURE
+    public double TrimPct;       // ELEVATOR TRIM PCT
+    public double SpoilerPct;    // SPOILERS HANDLE POSITION
+    public double SpoilerArmed;  // SPOILERS ARMED
 }
