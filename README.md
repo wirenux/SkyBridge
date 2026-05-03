@@ -8,6 +8,17 @@
 
 SkyBridge connects Microsoft Flight Simulator 2020 to a mobile-friendly web dashboard via a local network. A C# mod reads live flight data through SimConnect and streams it over UDP to a Python server, which pushes it to any browser on your LAN in real time via WebSocket.
 
+### 📸 Screenshots
+
+#### Mod running in the background, sending data to the server
+<img src="images/Mod.png" width="400" alt="Mod running in the background, sending data to the server">
+
+#### Server terminal showing active connections and decoded access codes
+<img src="images/Server.png" width="400" alt="Server terminal showing active connections">
+
+#### Dashboard on a phone, showing live telemetry data
+<img src="images/Dashboard.png" width="400" alt="Dashboard showing live telemetry data on a phone">
+
 ---
 
 ## Features
