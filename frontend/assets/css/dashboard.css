@@ -40,6 +40,8 @@ body {
     background-color: var(--bg-secondary);
     color: var(--text);
     line-height: 1.6;
+    display: flex;
+    flex-direction: column;
     min-height: 100vh;
     transition:
         background-color 0.3s,
@@ -138,6 +140,7 @@ header h1 {
     column-gap: 16px;
     max-width: 1400px;
     margin: 0 auto;
+    flex: 1;
 }
 
 @media (max-width: 700px) {
@@ -180,10 +183,6 @@ header h1 {
     box-shadow: 0 10px 30px rgba(59, 130, 246, 0.3);
 }
 
-.card.collapsed {
-    height: auto;
-}
-
 .card-title {
     font-size: 13px;
     font-weight: 600;
@@ -191,6 +190,7 @@ header h1 {
     color: var(--text);
     text-transform: uppercase;
     padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -201,24 +201,6 @@ header h1 {
     -ms-user-select: none;
     -webkit-touch-callout: none;
     transition: background 0.2s;
-}
-
-.card:not(.collapsed) .card-title {
-    border-bottom: 1px solid var(--border);
-}
-
-.card-title:active {
-    cursor: grabbing;
-}
-
-.card-title:hover {
-    background: var(--bg-secondary);
-}
-
-.card-chevron {
-    font-size: 14px;
-    transition: transform 0.3s ease;
-    display: inline-block;
 }
 
 /* ── Data rows ──────────────────────────────────────────────────────────────── */
@@ -483,21 +465,6 @@ header h1 {
     text-transform: uppercase;
     padding: 10px 16px 8px;
     border-bottom: 1px solid var(--border);
-}
-
-.card-chevron {
-    font-size: 10px;
-    color: var(--muted);
-    transition: transform 0.25s ease;
-    flex-shrink: 0;
-}
-
-.card.collapsed .card-chevron {
-    transform: rotate(-90deg);
-}
-
-.card.collapsed > *:not(.card-title) {
-    display: none;
 }
 
 /* ── Data rows ──────────────────────────────────────────────────────────────── */

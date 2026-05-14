@@ -18,7 +18,11 @@
         <header>
             <h1>SKYBRIDGE</h1>
             <div class="header-right">
-                <button class="theme-toggle" id="theme-toggle" title="Toggle dark mode">
+                <button
+                    class="theme-toggle"
+                    id="theme-toggle"
+                    title="Toggle dark mode"
+                >
                     🌙
                 </button>
                 <div class="status-pill">
@@ -30,10 +34,7 @@
 
         <div class="dashboard">
             <div class="card">
-                <div class="card-title" onclick="toggleCard(this)">
-                    Heading
-                    <span class="card-chevron">▾</span>
-                </div>
+                <div class="card-title" onclick="toggleCard(this)">Heading</div>
                 <div class="card-body">
                     <div class="hdg-instrument">
                         <canvas id="hdg-tape"></canvas>
@@ -46,7 +47,6 @@
             <div class="card">
                 <div class="card-title" onclick="toggleCard(this)">
                     Position
-                    <span class="card-chevron">▾</span>
                 </div>
                 <div class="map-wrap">
                     <div id="map"></div>
@@ -59,7 +59,6 @@
             <div class="card">
                 <div class="card-title" onclick="toggleCard(this)">
                     Nav Ball
-                    <span class="card-chevron">▾</span>
                 </div>
                 <div class="adi-instrument">
                     <canvas id="adi-canvas"></canvas>
@@ -68,10 +67,7 @@
 
             <!-- Speed -->
             <div class="card">
-                <div class="card-title" onclick="toggleCard(this)">
-                    Speed
-                    <span class="card-chevron">▾</span>
-                </div>
+                <div class="card-title" onclick="toggleCard(this)">Speed</div>
                 <div class="speed-grid">
                     <div class="speed-cell">
                         <span class="data-label">GS</span>
@@ -96,7 +92,6 @@
             <div class="card">
                 <div class="card-title" onclick="toggleCard(this)">
                     Navigation
-                    <span class="card-chevron">▾</span>
                 </div>
                 <div class="data-row">
                     <span class="data-label">ALT</span>
@@ -114,10 +109,7 @@
 
             <!-- Engines -->
             <div class="card">
-                <div class="card-title" onclick="toggleCard(this)">
-                    Engines
-                    <span class="card-chevron">▾</span>
-                </div>
+                <div class="card-title" onclick="toggleCard(this)">Engines</div>
                 <div id="engines"></div>
             </div>
 
@@ -125,7 +117,6 @@
             <div class="card">
                 <div class="card-title" onclick="toggleCard(this)">
                     Location
-                    <span class="card-chevron">▾</span>
                 </div>
                 <div class="data-row">
                     <span class="data-label">LAT</span>
@@ -139,10 +130,7 @@
 
             <!-- Systems -->
             <div class="card">
-                <div class="card-title" onclick="toggleCard(this)">
-                    Systems
-                    <span class="card-chevron">▾</span>
-                </div>
+                <div class="card-title" onclick="toggleCard(this)">Systems</div>
                 <div class="data-row">
                     <span class="data-label">Gear</span>
                     <span class="ap-badge" id="gear-status">-</span>
@@ -181,7 +169,6 @@
             <div class="card">
                 <div class="card-title" onclick="toggleCard(this)">
                     Autopilot
-                    <span class="card-chevron">▾</span>
                 </div>
                 <div class="ap-header">
                     <span class="data-label">STATUS</span>

@@ -1,4 +1,4 @@
-// Simple drag to reorder and collapse functionality
+// Simple drag to reorder functionality
 let draggedCard = null;
 let touchStartX = 0;
 let touchStartY = 0;
@@ -8,7 +8,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     cards.forEach(card => {
         const title = card.querySelector('.card-title');
-        const chevron = card.querySelector('.card-chevron');
         
         if (title) {
             // Desktop drag
@@ -63,18 +62,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 draggedCard = null;
                 card.classList.remove('dragging');
             }, { passive: true });
-
-            // Collapse on click/tap
-            title.addEventListener('click', (e) => {
-                // Check if it's a quick tap (not a drag)
-                const isTap = Math.abs(e.clientX - touchStartX) < 10 && 
-                             Math.abs(e.clientY - touchStartY) < 10;
-                
-                if (e.target === chevron || e.target === title) {
-                    e.preventDefault();
-                    toggleCollapse(card);
-                }
-            });
         }
 
         // Desktop drag over
@@ -87,20 +74,3 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
-
-function toggleCollapse(card) {
-    const allContent = Array.from(card.children).slice(1);
-    const chevron = card.querySelector('.card-chevron');
-    
-    if (card.classList.contains('collapsed')) {
-        // Expand
-        card.classList.remove('collapsed');
-        allContent.forEach(el => el.style.display = '');
-        if (chevron) chevron.textContent = '▾';
-    } else {
-        // Collapse
-        card.classList.add('collapsed');
-        allContent.forEach(el => el.style.display = 'none');
-        if (chevron) chevron.textContent = '▸';
-    }
-}
