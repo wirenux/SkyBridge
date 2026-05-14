@@ -31,7 +31,7 @@ while (true)
                 ╚══════╝╚═╝  ╚═╝   ╚═╝   ╚═════╝ ╚═╝  ╚═╝╚═╝╚═════╝  ╚═════╝ ╚══════╝
             """);
             Console.WriteLine("");
-            Console.WriteLine("     v1.0.0 · WireNux");
+            Console.WriteLine("     v1.2.0 · WireNux");
             Console.WriteLine("");
 
             sim.OnRecvOpen += (s, d) =>
