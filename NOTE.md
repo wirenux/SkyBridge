@@ -51,3 +51,11 @@ Current Auto pilot data:
 ✅ Y/N ALT: XXX 
 ✅ Y/N IAS: XXX
 ✅ HDG
+
+
+TODO:
+
+✅ Change css to a more sober ui (like shadccn ui)
+Add QRCode option
+✅ Be able to resize container in the ui / BentoUI
+Add Graphs

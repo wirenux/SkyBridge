@@ -10,14 +10,21 @@
         <link rel="stylesheet" href="/assets/css/dashboard.css" />
         <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
         <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+        <script src="/assets/js/theme.js"></script>
+        <script src="/assets/js/dashboard.js" defer></script>
         <title>SkyBridge - Dashboard</title>
     </head>
     <body>
         <header>
             <h1>SKYBRIDGE</h1>
-            <div class="status-pill">
-                <div class="status-dot" id="status-dot"></div>
-                <span id="status">Connecting...</span>
+            <div class="header-right">
+                <button class="theme-toggle" id="theme-toggle" title="Toggle dark mode">
+                    🌙
+                </button>
+                <div class="status-pill">
+                    <div class="status-dot" id="status-dot"></div>
+                    <span id="status">Connecting...</span>
+                </div>
             </div>
         </header>
 
