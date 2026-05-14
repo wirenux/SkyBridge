@@ -3,6 +3,7 @@ import os
 import sys
 import threading
 
+import qrcode
 import udp_listener
 from app import app, get_local_ip, socketio
 from base62 import encode
@@ -14,6 +15,7 @@ if not DEBUG:
     log.setLevel(logging.ERROR)
     logging.getLogger("socketio").setLevel(logging.ERROR)
     logging.getLogger("engineio").setLevel(logging.ERROR)
+
     app.logger.setLevel(logging.ERROR)
 
     class NoTLSFilter(logging.Filter):
@@ -25,10 +27,12 @@ if not DEBUG:
                     "Bad request version",
                     "Bad HTTP/0.9",
                     "Bad request syntax",
+                    "Invalid session",
                 ]
             )
 
     log.addFilter(NoTLSFilter())
+    logging.getLogger("engineio").addFilter(NoTLSFilter())
 
 if __name__ == "__main__":
     udp_listener.init(socketio)
@@ -68,6 +72,13 @@ if __name__ == "__main__":
 
     print(f"  Server  : http://{local_ip}:{PORT}")
     print(f"  Code    : {code}")
+    print()
+
+    # Generate and display QR code
+    qr = qrcode.QRCode(box_size=1, border=1)
+    qr.add_data(f"http://{local_ip}:{PORT}/dashboard")
+    qr.make(fit=True)
+    qr.print_ascii(invert=True)
     print()
 
     flask_thread.join()

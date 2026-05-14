@@ -13,6 +13,7 @@ a = Analysis(
         "flask_socketio",
         "engineio",
         "socketio",
+        "qrcode",
     ],
     hookspath=[],
     runtime_hooks=[],

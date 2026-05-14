@@ -56,6 +56,6 @@ Current Auto pilot data:
 TODO:
 
 ✅ Change css to a more sober ui (like shadccn ui)
-Add QRCode option
+✅ Add QRCode option
 ✅ Be able to resize container in the ui / BentoUI
 Add Graphs
