@@ -59,3 +59,5 @@ TODO:
 ✅ Add QRCode option
 ✅ Be able to resize container in the ui / BentoUI
 ❓ Add Graphs
+
+Maybe remove the portal things and just have the python script run on the local machine and open the dashboard on localhost:PORT/dashboard

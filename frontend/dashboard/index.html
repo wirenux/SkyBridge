@@ -183,7 +183,16 @@
         </div>
         <!-- /.dashboard -->
 
-        <div class="footer-bar" id="last-update"></div>
+        <div class="footer-bar" id="last-update">
+            <p id="update-time">—</p>
+            Made by ❤️ of ✈️ by
+            <a
+                href="https://github.com/wirenux"
+                target="_blank"
+                style="color: #007bff; text-decoration: none"
+                >@wirenux</a
+            >
+        </div>
 
         <script>
             const API_URL = "/api/data";
@@ -599,9 +608,7 @@
 
             function toggleAirports() {
                 _showAirports = !_showAirports;
-                console.log("Toggle airports:", _showAirports);
 
-                // Create layer if it doesn't exist
                 if (!_airportLayer) {
                     _airportLayer = L.layerGroup().addTo(_map);
                 }
@@ -644,8 +651,8 @@
 
             function update(data) {
                 setLive(true);
-                document.getElementById("last-update").textContent =
-                    `Last update: ${new Date().toLocaleTimeString()}`;
+                document.getElementById("update-time").textContent =
+                    new Date().toLocaleTimeString();
 
                 // Map
                 if (!_map) {
