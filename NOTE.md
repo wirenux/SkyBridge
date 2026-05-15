@@ -61,3 +61,5 @@ TODO:
 ❓ Add Graphs
 
 Maybe remove the portal things and just have the python script run on the local machine and open the dashboard on localhost:PORT/dashboard
+
+Refractor JS in dashboard/index.html into assets/js/dashboard.js

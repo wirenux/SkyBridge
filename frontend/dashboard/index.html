@@ -51,11 +51,9 @@
                 </div>
                 <div class="map-wrap">
                     <div id="map"></div>
-                    <button id="follow-btn" onclick="toggleFollow()">
-                        📍 Following
-                    </button>
+                    <button id="follow-btn" onclick="toggleFollow()">📍</button>
                     <button id="airports-btn" onclick="toggleAirports()">
-                        ✈️ Airports
+                        🛬
                     </button>
                 </div>
             </div>
@@ -600,7 +598,7 @@
 
             function updateFollowBtn() {
                 const btn = document.getElementById("follow-btn");
-                btn.textContent = _follow ? "📍 Following" : "📍 Follow plane";
+                btn.textContent = _follow ? "📍" : "📍";
                 btn.classList.toggle("active", _follow);
             }
 
@@ -627,9 +625,7 @@
             function updateAirportsBtn() {
                 const btn = document.getElementById("airports-btn");
                 if (!btn) return;
-                btn.textContent = _showAirports
-                    ? "✈️ Airports"
-                    : "✈️ Airports (off)";
+                btn.textContent = _showAirports ? "🛬" : "🛬";
                 btn.classList.toggle("active", _showAirports);
             }
 
