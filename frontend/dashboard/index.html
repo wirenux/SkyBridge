@@ -624,13 +624,13 @@
 
             function updateAirportsBtn() {
                 const btn = document.getElementById("airports-btn");
-                if (!btn) return;
                 btn.textContent = _showAirports ? "🛬" : "🛬";
                 btn.classList.toggle("active", _showAirports);
             }
 
             // Initialize button on page load
             window.addEventListener("load", updateAirportsBtn);
+            window.addEventListener("load", updateFollowBtn);
 
             function fmt(val, decimals = 1, unit = "") {
                 if (val === undefined || val === null) return "—";
