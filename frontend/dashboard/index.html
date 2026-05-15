@@ -12,6 +12,7 @@
         <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
         <script src="/assets/js/theme.js"></script>
         <script src="/assets/js/dashboard.js" defer></script>
+        <meta name="screen-wake-lock" content="disabled" />
         <title>SkyBridge - Dashboard</title>
     </head>
     <body>
@@ -52,6 +53,9 @@
                     <div id="map"></div>
                     <button id="follow-btn" onclick="toggleFollow()">
                         📍 Following
+                    </button>
+                    <button id="airports-btn" onclick="toggleAirports()">
+                        ✈️ Airports
                     </button>
                 </div>
             </div>
@@ -206,6 +210,22 @@
             let _pitchTarget = 0;
             let _bankTarget = 0;
             let _adiAnimId = null;
+
+            document.addEventListener("visibilitychange", () => {
+                if (document.hidden) {
+                    if (_hdgAnimId) {
+                        cancelAnimationFrame(_hdgAnimId);
+                        _hdgAnimId = null;
+                    }
+                    if (_adiAnimId) {
+                        cancelAnimationFrame(_adiAnimId);
+                        _adiAnimId = null;
+                    }
+                    socket.disconnect();
+                } else {
+                    socket.connect();
+                }
+            });
 
             function toggleCard(titleEl) {
                 const card = titleEl.closest(".card");
@@ -491,7 +511,12 @@
             let _lastAirportFetch = 0;
 
             async function fetchAirports(lat, lon) {
-                _airportLayer = L.layerGroup().addTo(_map);
+                if (!_airportLayer) {
+                    _airportLayer = L.layerGroup().addTo(_map);
+                }
+
+                if (!_showAirports) return;
+
                 if (_map.getZoom() < 6) {
                     _airportLayer.clearLayers();
                     return;
@@ -510,7 +535,6 @@
                     [out:json][timeout:10];
                     (
                         node["aeroway"="aerodrome"](${s},${w},${n},${e});
-                        // node["aeroway"="helipad"](${s},${w},${n},${e});
                         way["aeroway"="aerodrome"](${s},${w},${n},${e});
                         relation["aeroway"="aerodrome"](${s},${w},${n},${e});
                     );
@@ -523,27 +547,28 @@
                         {
                             method: "POST",
                             body: query,
+                            timeout: 10000,
                         },
                     );
+
+                    if (!res.ok) {
+                        return;
+                    }
+
                     const data = await res.json();
 
                     _airportLayer.clearLayers();
 
-                    data.elements.forEach((el) => {
+                    data.elements?.forEach((el) => {
                         const lat = el.lat ?? el.center?.lat;
                         const lon = el.lon ?? el.center?.lon;
                         const name = el.tags?.name ?? el.tags?.ref ?? "Airport";
                         const icao = el.tags?.icao ?? "";
-                        const type = el.tags?.aeroway;
-
                         if (!lat || !lon) return;
 
                         const icon = L.divIcon({
                             className: "",
-                            html:
-                                type === "helipad"
-                                    ? ``
-                                    : `<div class="apt-marker">${icao || "✈"}</div>`,
+                            html: `<div class="apt-marker">${icao || "✈"}</div>`,
                             iconAnchor: [null, null],
                         });
 
@@ -554,7 +579,7 @@
                             .addTo(_airportLayer);
                     });
                 } catch (e) {
-                    console.warn("Airport fetch failed:", e);
+                    console.warn("Airport fetch failed:", e.message);
                 }
             }
 
@@ -569,6 +594,40 @@
                 btn.textContent = _follow ? "📍 Following" : "📍 Follow plane";
                 btn.classList.toggle("active", _follow);
             }
+
+            let _showAirports = true;
+
+            function toggleAirports() {
+                _showAirports = !_showAirports;
+                console.log("Toggle airports:", _showAirports);
+
+                // Create layer if it doesn't exist
+                if (!_airportLayer) {
+                    _airportLayer = L.layerGroup().addTo(_map);
+                }
+
+                if (_showAirports) {
+                    _map.addLayer(_airportLayer);
+                    if (_map.getZoom() >= 6) {
+                        fetchAirports();
+                    }
+                } else {
+                    _map.removeLayer(_airportLayer);
+                }
+                updateAirportsBtn();
+            }
+
+            function updateAirportsBtn() {
+                const btn = document.getElementById("airports-btn");
+                if (!btn) return;
+                btn.textContent = _showAirports
+                    ? "✈️ Airports"
+                    : "✈️ Airports (off)";
+                btn.classList.toggle("active", _showAirports);
+            }
+
+            // Initialize button on page load
+            window.addEventListener("load", updateAirportsBtn);
 
             function fmt(val, decimals = 1, unit = "") {
                 if (val === undefined || val === null) return "—";

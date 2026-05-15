@@ -406,6 +406,36 @@ header h1 {
     border-color: var(--accent);
 }
 
+#airports-btn {
+    position: absolute;
+    bottom: 50px;
+    right: 12px;
+    z-index: 1000;
+    width: auto;
+    padding: 8px 12px;
+    font-size: 12px;
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 500;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+#airports-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+#airports-btn.active {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+}
+
 /* ── Heading tape ───────────────────────────────────────────────────────────── */
 .hdg-instrument {
     padding: 0;
@@ -667,6 +697,33 @@ header h1 {
     color: var(--accent);
 }
 #follow-btn.active {
+    border-color: var(--ok);
+    color: var(--ok);
+}
+
+#airports-btn {
+    position: absolute;
+    bottom: 50px;
+    right: 12px;
+    z-index: 1000;
+    padding: 8px 12px;
+    font-size: 12px;
+    font-family: var(--mono);
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.5px;
+}
+
+#airports-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+#airports-btn.active {
     border-color: var(--ok);
     color: var(--ok);
 }

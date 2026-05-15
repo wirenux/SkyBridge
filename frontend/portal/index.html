@@ -11,11 +11,6 @@
         <div class="container">
             <h1>SKYBRIDGE</h1>
 
-            <div class="nav-links">
-                <a href="/" class="active">Decode</a>
-                <a href="/host">Host</a>
-            </div>
-
             <div class="form-group">
                 <label for="code">9-character code</label>
                 <input
@@ -32,28 +27,12 @@
 
             <button onclick="decodeCode()">Open dashboard</button>
 
-            <div id="result" class="result">
-                <p>
-                    <span class="result-label">Code</span>
-                    <span class="result-value" id="result-code"></span>
-                </p>
-                <p>
-                    <span class="result-label">IP</span>
-                    <span class="result-value" id="result-ip"></span>
-                </p>
-                <p>
-                    <span class="result-label">Port</span>
-                    <span class="result-value" id="result-port"></span>
-                </p>
-                <a id="link-btn" class="link-button" target="_blank"
-                    >Open dashboard →</a
-                >
-            </div>
+            <a id="link-btn" class="link-button" target="_blank"></a>
         </div>
 
         <script>
             const codeInput = document.getElementById("code");
-            const resultDiv = document.getElementById("result");
+            const linkBtn = document.getElementById("link-btn");
 
             codeInput.addEventListener("keypress", (e) => {
                 if (e.key === "Enter") decodeCode();
@@ -62,46 +41,36 @@
             async function decodeCode() {
                 const code = codeInput.value.trim();
                 if (!code) {
-                    showError("Please enter a code");
+                    alert("Please enter a code");
                     return;
                 }
                 if (code.length !== 9) {
-                    showError("Code must be exactly 9 characters");
+                    alert("Code must be exactly 9 characters");
                     return;
                 }
                 try {
                     const response = await fetch(`/api/decode/${code}`);
                     const data = await response.json();
-                    data.success
-                        ? showResult(data)
-                        : showError(data.error || "Failed to decode");
+                    if (data.success) {
+                        linkBtn.href = data.link + "/dashboard";
+                        linkBtn.click();
+                    } else {
+                        alert(data.error || "Failed to decode");
+                    }
                 } catch (e) {
-                    showError("Network error: " + e.message);
+                    alert("Network error: " + e.message);
                 }
-            }
-
-            function showResult(data) {
-                document.getElementById("result-code").textContent = data.code;
-                document.getElementById("result-ip").textContent = data.ip;
-                document.getElementById("result-port").textContent = data.port;
-                const linkBtn = document.getElementById("link-btn");
-                linkBtn.href = data.link + "/dashboard";
-                resultDiv.className = "result show success";
-                const err = resultDiv.querySelector(".error-message");
-                if (err) err.style.display = "none";
-            }
-
-            function showError(message) {
-                let err = resultDiv.querySelector(".error-message");
-                if (!err) {
-                    err = document.createElement("p");
-                    err.className = "error-message";
-                    resultDiv.insertBefore(err, resultDiv.firstChild);
-                }
-                err.textContent = `❌ ${message}`;
-                err.style.display = "block";
-                resultDiv.className = "result show error";
             }
         </script>
     </body>
+
+    <footer>
+        Made by ❤️ of ✈️ by
+        <a
+            href="https://github.com/wirenux"
+            target="_blank"
+            style="color: #007bff; text-decoration: none"
+            >@wirenux</a
+        >
+    </footer>
 </html>
