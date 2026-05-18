@@ -1,76 +1,678 @@
-// Simple drag to reorder functionality
 let draggedCard = null;
 let touchStartX = 0;
 let touchStartY = 0;
 
-document.addEventListener('DOMContentLoaded', function() {
-    const cards = document.querySelectorAll('.card');
-    
-    cards.forEach(card => {
-        const title = card.querySelector('.card-title');
-        
-        if (title) {
-            // Desktop drag
-            title.draggable = true;
-            
-            title.addEventListener('dragstart', (e) => {
-                draggedCard = card;
-                card.classList.add('dragging');
-                e.dataTransfer.effectAllowed = 'move';
-            });
-            
-            title.addEventListener('dragend', () => {
-                draggedCard = null;
-                card.classList.remove('dragging');
-            });
+const API_URL = "/api/data";
+const REFRESH_MS = 500;
 
-            // Mobile touch drag
-            title.addEventListener('touchstart', (e) => {
-                if (e.touches.length === 1) {
-                    draggedCard = card;
-                    touchStartX = e.touches[0].clientX;
-                    touchStartY = e.touches[0].clientY;
-                    card.classList.add('dragging');
-                }
-            }, { passive: true });
+let _map = null;
+let _marker = null;
+let _follow = true;
 
-            title.addEventListener('touchmove', (e) => {
-                if (draggedCard && e.touches.length === 1) {
-                    e.preventDefault();
-                    const dashboard = document.querySelector('.dashboard');
-                    const cards = Array.from(dashboard.querySelectorAll('.card'));
-                    
-                    const touchY = e.touches[0].clientY;
-                    
-                    // Find card under touch point
-                    cards.forEach(otherCard => {
-                        if (otherCard !== draggedCard) {
-                            const rect = otherCard.getBoundingClientRect();
-                            if (touchY > rect.top && touchY < rect.bottom) {
-                                if (touchY < rect.top + rect.height / 2) {
-                                    otherCard.parentNode.insertBefore(draggedCard, otherCard);
-                                } else {
-                                    otherCard.parentNode.insertBefore(draggedCard, otherCard.nextSibling);
-                                }
-                            }
-                        }
-                    });
-                }
-            }, { passive: false });
+const HDG_CANVAS = document.getElementById("hdg-tape");
+const HDG_CTX = HDG_CANVAS.getContext("2d");
+const DEG_PER_PX = 6;
 
-            title.addEventListener('touchend', () => {
-                draggedCard = null;
-                card.classList.remove('dragging');
-            }, { passive: true });
-        }
+let _hdgCurrent = 0;
+let _hdgTarget = 0;
+let _hdgAnimId = null;
 
-        // Desktop drag over
-        card.addEventListener('dragover', (e) => {
+const ADI_CANVAS = document.getElementById("adi-canvas");
+const ADI_CTX = ADI_CANVAS.getContext("2d");
+const ADI_SIZE = 220; // diametre in px
+
+let _pitchCurrent = 0;
+let _bankCurrent = 0;
+let _pitchTarget = 0;
+let _bankTarget = 0;
+let _adiAnimId = null;
+
+document.addEventListener("DOMContentLoaded", function () {
+  const cards = document.querySelectorAll(".card");
+
+  cards.forEach((card) => {
+    const title = card.querySelector(".card-title");
+
+    if (title) {
+      // Desktop drag
+      title.draggable = true;
+
+      title.addEventListener("dragstart", (e) => {
+        draggedCard = card;
+        card.classList.add("dragging");
+        e.dataTransfer.effectAllowed = "move";
+      });
+
+      title.addEventListener("dragend", () => {
+        draggedCard = null;
+        card.classList.remove("dragging");
+      });
+
+      // Mobile touch drag
+      title.addEventListener(
+        "touchstart",
+        (e) => {
+          if (e.touches.length === 1) {
+            draggedCard = card;
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+            card.classList.add("dragging");
+          }
+        },
+        { passive: true },
+      );
+
+      title.addEventListener(
+        "touchmove",
+        (e) => {
+          if (draggedCard && e.touches.length === 1) {
             e.preventDefault();
-            e.dataTransfer.dropEffect = 'move';
-            if (draggedCard && draggedCard !== card) {
-                card.parentNode.insertBefore(draggedCard, card);
-            }
-        });
+            const dashboard = document.querySelector(".dashboard");
+            const cards = Array.from(dashboard.querySelectorAll(".card"));
+
+            const touchY = e.touches[0].clientY;
+
+            // Find card under touch point
+            cards.forEach((otherCard) => {
+              if (otherCard !== draggedCard) {
+                const rect = otherCard.getBoundingClientRect();
+                if (touchY > rect.top && touchY < rect.bottom) {
+                  if (touchY < rect.top + rect.height / 2) {
+                    otherCard.parentNode.insertBefore(draggedCard, otherCard);
+                  } else {
+                    otherCard.parentNode.insertBefore(
+                      draggedCard,
+                      otherCard.nextSibling,
+                    );
+                  }
+                }
+              }
+            });
+          }
+        },
+        { passive: false },
+      );
+
+      title.addEventListener(
+        "touchend",
+        () => {
+          draggedCard = null;
+          card.classList.remove("dragging");
+        },
+        { passive: true },
+      );
+    }
+
+    // Desktop drag over
+    card.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+      if (draggedCard && draggedCard !== card) {
+        card.parentNode.insertBefore(draggedCard, card);
+      }
     });
+  });
 });
+
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) {
+    if (_hdgAnimId) {
+      cancelAnimationFrame(_hdgAnimId);
+      _hdgAnimId = null;
+    }
+    if (_adiAnimId) {
+      cancelAnimationFrame(_adiAnimId);
+      _adiAnimId = null;
+    }
+    socket.disconnect();
+  } else {
+    socket.connect();
+  }
+});
+
+function toggleCard(titleEl) {
+  const card = titleEl.closest(".card");
+  card.classList.toggle("collapsed");
+
+  if (!card.classList.contains("collapsed")) {
+    setTimeout(() => {
+      if (card.querySelector("#hdg-tape")) drawHdgTape(_hdgCurrent);
+      if (card.querySelector("#adi-canvas"))
+        drawADI(_pitchCurrent, _bankCurrent);
+      if (card.querySelector("#map")) _map?.invalidateSize();
+    }, 320);
+  }
+}
+
+function drawADI(pitch, bank) {
+  const canvas = ADI_CANVAS;
+  const size = ADI_SIZE;
+  canvas.width = size;
+  canvas.height = size;
+
+  const ctx = ADI_CTX;
+  const cx = size / 2;
+  const cy = size / 2;
+  const r = size / 2 - 2;
+
+  // clip
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.clip();
+
+  // Rotation bank
+  ctx.translate(cx, cy);
+  ctx.rotate((bank * Math.PI) / 180);
+  ctx.translate(-cx, -cy);
+
+  // Horizon offset selon pitch (1° = 3px)
+  const pitchOffset = -pitch * 3;
+
+  // Sky
+  ctx.fillStyle = "#1a4a8a";
+  ctx.fillRect(0, 0, size, cy + pitchOffset);
+
+  // Ground
+  ctx.fillStyle = "#6b3a1f";
+  ctx.fillRect(0, cy + pitchOffset, size, size);
+
+  // Horizon line
+  ctx.strokeStyle = "#ffffff";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(0, cy + pitchOffset);
+  ctx.lineTo(size, cy + pitchOffset);
+  ctx.stroke();
+
+  // Graduations pitch (each 5°)
+  ctx.font = "10px monospace";
+  ctx.fillStyle = "#ffffff";
+  ctx.textAlign = "center";
+  for (let p = -30; p <= 30; p += 5) {
+    if (p === 0) continue;
+    const y = cy + pitchOffset - p * 3;
+    const len = p % 10 === 0 ? 30 : 18;
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 1;
+    ctx.globalAlpha = 0.6;
+    ctx.beginPath();
+    ctx.moveTo(cx - len, y);
+    ctx.lineTo(cx + len, y);
+    ctx.stroke();
+    if (p % 10 === 0) {
+      ctx.globalAlpha = 0.8;
+      ctx.fillText(Math.abs(p), cx + len + 10, y + 4);
+      ctx.fillText(Math.abs(p), cx - len - 10, y + 4);
+    }
+  }
+
+  ctx.globalAlpha = 1;
+  ctx.restore();
+
+  // Fix overlay
+
+  // External circle
+  ctx.strokeStyle = "#2a3a4a";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // bank angle
+  const bankAngles = [-60, -45, -30, -20, -10, 0, 10, 20, 30, 45, 60];
+  bankAngles.forEach((angle) => {
+    const rad = ((angle - 90) * Math.PI) / 180;
+    const inner = r - (angle % 30 === 0 ? 14 : 8);
+    ctx.strokeStyle = "#aaaaaa";
+    ctx.lineWidth = angle % 30 === 0 ? 2 : 1;
+    ctx.beginPath();
+    ctx.moveTo(cx + Math.cos(rad) * inner, cy + Math.sin(rad) * inner);
+    ctx.lineTo(cx + Math.cos(rad) * r, cy + Math.sin(rad) * r);
+    ctx.stroke();
+  });
+
+  // Triangle bank
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate((bank * Math.PI) / 180);
+  ctx.fillStyle = "#ffffff";
+  ctx.strokeStyle = "#ffffff";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, -r + 2);
+  ctx.lineTo(-6, -r + 14);
+  ctx.lineTo(6, -r + 14);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+
+  // Plane line
+  ctx.strokeStyle = "#ffdd00";
+  ctx.lineWidth = 3;
+  ctx.lineCap = "round";
+
+  // Left wing
+  ctx.beginPath();
+  ctx.moveTo(cx - 40, cy);
+  ctx.lineTo(cx - 10, cy);
+  ctx.stroke();
+
+  // Right wing
+  ctx.beginPath();
+  ctx.moveTo(cx + 10, cy);
+  ctx.lineTo(cx + 40, cy);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(cx - 10, cy);
+  ctx.lineTo(cx + 10, cy);
+  ctx.stroke();
+
+  // Central point
+  ctx.fillStyle = "#ffdd00";
+  ctx.beginPath();
+  ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Ref line
+  ctx.strokeStyle = "rgba(255,255,255,0.3)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(cx - r, cy);
+  ctx.lineTo(cx - r + 16, cy);
+  ctx.moveTo(cx + r - 16, cy);
+  ctx.lineTo(cx + r, cy);
+  ctx.stroke();
+}
+
+function animateADI() {
+  const dp = _pitchTarget - _pitchCurrent;
+  const db = shortAngleDiff(_bankCurrent, _bankTarget);
+
+  if (Math.abs(dp) < 0.05 && Math.abs(db) < 0.05) {
+    _pitchCurrent = _pitchTarget;
+    _bankCurrent = _bankTarget;
+    _adiAnimId = null;
+    drawADI(_pitchCurrent, _bankCurrent);
+    return;
+  }
+
+  _pitchCurrent += dp * 0.12;
+  _bankCurrent += db * 0.12;
+  _bankCurrent = ((_bankCurrent % 360) + 360) % 360;
+
+  drawADI(_pitchCurrent, _bankCurrent);
+  _adiAnimId = requestAnimationFrame(animateADI);
+}
+
+function shortAngleDiff(from, to) {
+  let diff = ((((to - from) % 360) + 540) % 360) - 180;
+  return diff;
+}
+
+function animateHdg() {
+  const diff = shortAngleDiff(_hdgCurrent, _hdgTarget);
+
+  if (Math.abs(diff) < 0.1) {
+    _hdgCurrent = _hdgTarget;
+    _hdgAnimId = null;
+    drawHdgTape(_hdgCurrent);
+    return;
+  }
+
+  _hdgCurrent += diff * 0.12;
+  _hdgCurrent = ((_hdgCurrent % 360) + 360) % 360;
+
+  drawHdgTape(_hdgCurrent);
+  _hdgAnimId = requestAnimationFrame(animateHdg);
+}
+
+function drawHdgTape(hdg) {
+  const W = HDG_CANVAS.clientWidth || 350;
+  const H = 50;
+  HDG_CANVAS.width = W;
+  HDG_CANVAS.height = H;
+
+  const ctx = HDG_CTX;
+  const cx = W / 2;
+
+  ctx.fillStyle = "#070a0e";
+  ctx.fillRect(0, 0, W, H);
+
+  for (let d = -90; d <= 90; d++) {
+    const deg = (((Math.round(hdg) + d) % 360) + 360) % 360;
+    const x = cx + d * DEG_PER_PX;
+    const isMaj = deg % 10 === 0;
+    const isMed = deg % 5 === 0;
+
+    if (!isMed && !isMaj) continue;
+    if (x < 0 || x > W) continue;
+
+    ctx.strokeStyle = isMaj ? "#4a5a6a" : "#2a3540";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x, H);
+    ctx.lineTo(x, isMaj ? H - 20 : H - 12);
+    ctx.stroke();
+
+    if (isMaj) {
+      ctx.fillStyle = deg % 30 === 0 ? "#e8edf3" : "#4a5a6a";
+      ctx.font = "11px monospace";
+      ctx.textAlign = "center";
+      ctx.fillText(String(deg).padStart(3, "0"), x, H - 24);
+    }
+  }
+
+  ctx.strokeStyle = "rgba(0,212,255,0.6)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(cx, 0);
+  ctx.lineTo(cx, H);
+  ctx.stroke();
+
+  ctx.fillStyle = "rgba(0,212,255,0.9)";
+  ctx.beginPath();
+  ctx.moveTo(cx - 6, 0);
+  ctx.lineTo(cx + 6, 0);
+  ctx.lineTo(cx, 10);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function initMap(lat, lon) {
+  _map = L.map("map", { zoomControl: true }).setView([lat, lon], 13);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: "© OpenStreetMap",
+  }).addTo(_map);
+  _marker = L.marker([lat, lon]).addTo(_map);
+  _map.on("dragstart", () => {
+    _follow = false;
+    updateFollowBtn();
+  });
+  _map.on("moveend", () => fetchAirports());
+  _map.on("zoomend", () => fetchAirports());
+}
+
+let _airportLayer = null;
+let _lastAirportFetch = 0;
+
+async function fetchAirports(lat, lon) {
+  if (!_airportLayer) {
+    _airportLayer = L.layerGroup().addTo(_map);
+  }
+
+  if (!_showAirports) return;
+
+  if (_map.getZoom() < 6) {
+    _airportLayer.clearLayers();
+    return;
+  }
+
+  if (Date.now() - _lastAirportFetch < 5000) return;
+  _lastAirportFetch = Date.now();
+
+  const bounds = _map.getBounds();
+  const s = bounds.getSouth().toFixed(4);
+  const w = bounds.getWest().toFixed(4);
+  const n = bounds.getNorth().toFixed(4);
+  const e = bounds.getEast().toFixed(4);
+
+  const query = `
+        [out:json][timeout:10];
+        (
+            node["aeroway"="aerodrome"](${s},${w},${n},${e});
+            way["aeroway"="aerodrome"](${s},${w},${n},${e});
+            relation["aeroway"="aerodrome"](${s},${w},${n},${e});
+        );
+        out center tags;
+    `;
+
+  try {
+    const res = await fetch("https://overpass-api.de/api/interpreter", {
+      method: "POST",
+      body: query,
+      timeout: 10000,
+    });
+
+    if (!res.ok) {
+      return;
+    }
+
+    const data = await res.json();
+
+    _airportLayer.clearLayers();
+
+    data.elements?.forEach((el) => {
+      const lat = el.lat ?? el.center?.lat;
+      const lon = el.lon ?? el.center?.lon;
+      const name = el.tags?.name ?? el.tags?.ref ?? "Airport";
+      const icao = el.tags?.icao ?? "";
+      if (!lat || !lon) return;
+
+      const icon = L.divIcon({
+        className: "",
+        html: `<div class="apt-marker">${icao || "✈"}</div>`,
+        iconAnchor: [null, null],
+      });
+
+      L.marker([lat, lon], { icon })
+        .bindPopup(`<b>${name}</b>${icao ? `<br>ICAO: ${icao}` : ""}`)
+        .addTo(_airportLayer);
+    });
+  } catch (e) {
+    console.warn("Airport fetch failed:", e.message);
+  }
+}
+
+function toggleFollow() {
+  _follow = !_follow;
+  updateFollowBtn();
+  if (_follow && _marker) _map.setView(_marker.getLatLng());
+}
+
+function updateFollowBtn() {
+  const btn = document.getElementById("follow-btn");
+  btn.textContent = _follow ? "📍" : "📍";
+  btn.classList.toggle("active", _follow);
+}
+
+let _showAirports = true;
+
+function toggleAirports() {
+  _showAirports = !_showAirports;
+
+  if (!_airportLayer) {
+    _airportLayer = L.layerGroup().addTo(_map);
+  }
+
+  if (_showAirports) {
+    _map.addLayer(_airportLayer);
+    if (_map.getZoom() >= 6) {
+      fetchAirports();
+    }
+  } else {
+    _map.removeLayer(_airportLayer);
+  }
+  updateAirportsBtn();
+}
+
+function updateAirportsBtn() {
+  const btn = document.getElementById("airports-btn");
+  btn.textContent = _showAirports ? "🛬" : "🛬";
+  btn.classList.toggle("active", _showAirports);
+}
+
+// Initialize button on page load
+window.addEventListener("load", updateAirportsBtn);
+window.addEventListener("load", updateFollowBtn);
+
+function fmt(val, decimals = 1, unit = "") {
+  if (val === undefined || val === null) return "—";
+  return `${parseFloat(val).toFixed(decimals)}${unit ? '<span class="unit">' + unit + "</span>" : ""}`;
+}
+
+function setLive(isLive) {
+  document.getElementById("status-dot").className =
+    "status-dot " + (isLive ? "live" : "error");
+  document.getElementById("status").textContent = isLive ? "Live" : "No signal";
+}
+
+function update(data) {
+  setLive(true);
+  document.getElementById("update-time").textContent =
+    new Date().toLocaleTimeString();
+
+  // Map
+  if (!_map) {
+    initMap(data.lat, data.lon);
+  } else {
+    _marker.setLatLng([data.lat, data.lon]);
+    if (_follow) _map.setView([data.lat, data.lon]);
+  }
+
+  // Heading tape
+  _hdgTarget = parseFloat(data.hdg) || 0;
+  if (!_hdgAnimId) _hdgAnimId = requestAnimationFrame(animateHdg);
+  document.getElementById("hdg-readout").textContent =
+    `${String(Math.round(_hdgTarget)).padStart(3, "0")}°`;
+
+  // ADI
+  _pitchTarget = parseFloat(data.pitch) || 0;
+  _bankTarget = parseFloat(data.bank) || 0;
+  if (!_adiAnimId) _adiAnimId = requestAnimationFrame(animateADI);
+
+  // Systems
+  document.getElementById("oat").innerHTML = fmt(data.oat, 1, "°C");
+
+  document.getElementById("trim").innerHTML = fmt(data.trim_pct, 1, "%");
+
+  const splrArmed = data.spoiler_armed;
+  const splrPct = parseFloat(data.spoiler_pct) || 0;
+  const splrEl = document.getElementById("spoiler");
+  if (splrPct > 1) {
+    splrEl.innerHTML = fmt(data.spoiler_pct, 0, "%");
+    splrEl.className = "data-value warn";
+  } else if (splrArmed) {
+    splrEl.textContent = "ARMED";
+    splrEl.className = "data-value warn";
+  } else {
+    splrEl.textContent = "OFF";
+    splrEl.className = "data-value";
+  }
+
+  // Altitude
+  const isAGL = data.alt_agl < 1000;
+  document.getElementById("alt").innerHTML =
+    `${fmt(data.alt, 0)} <span class="unit">ft</span><span class="alt-badge">${isAGL ? "AGL" : "MSL"}</span>`;
+
+  // Speed
+  document.getElementById("gs").innerHTML = fmt(data.gs, 1, " kt");
+  document.getElementById("ias").innerHTML = fmt(data.ias, 1, " kt");
+  document.getElementById("tas").innerHTML = fmt(data.tas, 1, " kt");
+  document.getElementById("mach").innerHTML = fmt(data.mach, 3);
+
+  // Navigation
+  document.getElementById("hdg").innerHTML = fmt(data.hdg, 1, "°");
+  document.getElementById("vs").innerHTML = fmt(data.vs, 0, " fpm");
+  document.getElementById("lat").innerHTML = fmt(data.lat, 6);
+  document.getElementById("lon").innerHTML = fmt(data.lon, 6);
+
+  // Engines
+  const engDiv = document.getElementById("engines");
+  engDiv.innerHTML = "";
+  if (data.motors && data.motors.length > 0) {
+    data.motors.forEach((m) => {
+      const isJet = m.is_jet;
+      const isRotor = data.rotor > 1;
+      const pct = isJet
+        ? m.n1
+        : isRotor
+          ? data.rotor / 30
+          : (m.rpm / 2700) * 100;
+      const valStr = isRotor
+        ? `${parseFloat(data.rotor).toFixed(0)} <span class="unit">rpm</span>`
+        : isJet
+          ? `${parseFloat(m.n1).toFixed(1)} <span class="unit">%</span>`
+          : `${parseFloat(m.rpm).toFixed(0)} <span class="unit">rpm</span>`;
+      const label = isRotor ? "ROTOR" : `ENG ${m.id}`;
+      engDiv.innerHTML += `
+                <div class="engine-row">
+                    <span class="engine-id">${label}</span>
+                    <div class="engine-bar-wrap">
+                        <div class="engine-bar" style="width:${Math.min(pct, 100)}%"></div>
+                    </div>
+                    <span class="engine-val">${valStr}</span>
+                </div>`;
+    });
+  } else {
+    engDiv.innerHTML = `<div class="data-row"><span class="data-label">—</span></div>`;
+  }
+
+  // Systems
+  const gearPercent = data.gear !== undefined ? data.gear : 0;
+  const gearBadge = document.getElementById("gear-status");
+  if (gearPercent == 0) {
+    gearBadge.textContent = "UP";
+    gearBadge.className = "ap-badge on";
+  } else if (gearPercent == 1) {
+    gearBadge.textContent = "DOWN";
+    gearBadge.className = "ap-badge";
+  } else if (gearPercent < 0.99 && gearPercent > 0.01) {
+    gearBadge.textContent = `${Math.round(gearPercent * 100)}%`;
+    gearBadge.className = "ap-badge warning";
+  }
+
+  document.getElementById("flaps").innerHTML =
+    `${fmt(data.flaps_index, 0)} <span class="unit">notch</span> · ${fmt(data.flaps_deg, 1, "°")}`;
+  document.getElementById("fuel").innerHTML = fmt(data.fuel_gal, 1, " gal");
+  document.getElementById("aoa").innerHTML = fmt(data.aoa, 2, "°");
+  document.getElementById("g").innerHTML = fmt(data.g, 2, " g");
+
+  // Autopilot
+  const ap = data.ap;
+  const apOn = ap && ap.on;
+  const badge = document.getElementById("ap-status");
+  badge.textContent = apOn ? "ON" : "OFF";
+  badge.className = "ap-badge" + (apOn ? " on" : "");
+
+  const apDiv = document.getElementById("ap-details");
+  apDiv.innerHTML = "";
+
+  const rows = [
+    [
+      "ALT",
+      ap && ap.alt_on
+        ? `${parseFloat(ap.alt_val).toFixed(0)} <span class="unit">ft</span>`
+        : "—",
+      ap && ap.alt_on ? "ok" : "",
+    ],
+    [
+      "IAS",
+      ap && ap.ias_on
+        ? `${parseFloat(ap.ias_val).toFixed(0)} <span class="unit">kt</span>`
+        : "—",
+      ap && ap.ias_on ? "ok" : "",
+    ],
+    [
+      "HDG",
+      ap && ap.hdg_on
+        ? `${parseFloat(ap.hdg_val).toFixed(0)}<span class="unit">°</span>`
+        : "—",
+      ap && ap.hdg_on ? "ok" : "",
+    ],
+  ];
+  rows.forEach(([label, val, status]) => {
+    apDiv.innerHTML += `
+            <div class="data-row">
+                <span class="data-label">${label}</span>
+                <span class="data-value ${status}">${val}</span>
+            </div>`;
+  });
+}
+
+const socket = io();
+
+socket.on("connect", () => setLive(true));
+socket.on("disconnect", () => setLive(false));
+socket.on("flight_data", (data) => update(data));
